@@ -1,8 +1,10 @@
 import type { Profile, WeddingEvent } from "./profile";
 import { pickTheme, THEMES } from "./themes";
 import { aiEnabled, aiTurn } from "./ai";
+import { KINDS, PAPER_LAYOUTS, SITE_LAYOUTS, type Design, type Doc, type Kind } from "./templates";
+import { MOTIFS, INVOCATIONS } from "./motifs";
 
-export type Turn = { reply: string; chips: string[]; profile: Profile; step: number; theme?: string };
+export type Turn = { reply: string; chips: string[]; profile: Profile; step: number; theme?: string; design?: Partial<Design> & { layout?: string }; addPiece?: Kind };
 
 export const DONE = 9;
 
@@ -85,18 +87,53 @@ function ask(step: number, p: Profile): Omit<Turn, "profile" | "step"> {
   }
 }
 
-export async function converse(profile: Profile, step: number, message: string, theme: string, history: { role: string; content: string }[] = []): Promise<Turn> {
+export async function converse(profile: Profile, step: number, message: string, theme: string, history: { role: string; content: string }[] = [], doc?: Doc | null): Promise<Turn> {
   // AI-first: OpenRouter drives the whole conversation; the rule engine below is the graceful fallback.
   if (aiEnabled()) {
-    const ai = await aiTurn(profile, theme, history, message).catch((e) => (console.error("aiTurn", e), null));
+    const ai = await aiTurn(profile, theme, history, message, doc).catch((e) => (console.error("aiTurn", e), null));
     if (ai) {
       const p = { ...profile, ...ai.patch };
       const done = ai.complete || step >= DONE;
       const nextTheme = ai.theme ?? (p.vibe || p.culture ? pickTheme(p.vibe, p.culture) : theme);
-      return { reply: ai.reply, chips: done && !ai.chips.length ? ["Try another style", "Publish & send"] : ai.chips, profile: p, step: done ? DONE : Math.max(step, 1), theme: step >= DONE && !ai.theme ? theme : nextTheme };
+      return { reply: ai.reply, chips: done && !ai.chips.length ? ["Show me templates", "Add a menu", "Publish & send"] : ai.chips, profile: p, step: done ? DONE : Math.max(step, 1), theme: step >= DONE && !ai.theme ? theme : nextTheme, design: ai.design, addPiece: ai.addPiece };
     }
   }
+  // Design edits on the active piece work in rules mode too, at any step.
+  const de = ruleDesign(message, doc);
+  if (de && step >= DONE) return { ...de, profile, step, theme };
   return converseRules(profile, step, message, theme);
+}
+
+// Rule-based piece editing: layouts, motifs, invocations, new pieces, size.
+function ruleDesign(m: string, doc?: Doc | null): Pick<Turn, "reply" | "chips" | "design" | "addPiece"> | null {
+  const l = m.toLowerCase();
+  const ALIASES: Record<Kind, string> = {
+    website: "website|wedding site", invite: "invitation|invite card", save: "save[- ]the[- ]date", event: "event card|haldi card|mehendi card|sangeet card",
+    story: "story|status", post: "square post|instagram post|post", welcome: "welcome sign|welcome board", program: "programme|program|order of ceremony",
+    menu: "menu", table: "table numbers?|table card", hashtag: "hashtag|photo sign", thankyou: "thank[- ]?you",
+  };
+  const addKind = (Object.keys(ALIASES) as Kind[]).find((k) => new RegExp(`\\b(add|make|create|need|want|design|new)\\b[^.]*\\b(a |an |the |some )?(${ALIASES[k]})\\b`).test(l));
+  if (addKind) return { reply: `A ${KINDS[addKind].name.toLowerCase()} is on its way — I've opened it for you. Tell me anything you'd like to change.`, chips: ["Try another layout", "Change the motif"], addPiece: addKind };
+  if (!doc) return null;
+  const layouts = doc.kind === "website" ? SITE_LAYOUTS : PAPER_LAYOUTS;
+  const lay = Object.entries(layouts).find(([k, v]) => l.includes(k) || l.includes(v.toLowerCase()));
+  if (lay) return { reply: `Here it is in the ${lay[1]} layout.`, chips: Object.values(layouts).filter((v) => v !== lay[1]).slice(0, 4), design: { layout: lay[0] } };
+  if (/another layout|different layout|new layout/.test(l)) {
+    const keys = Object.keys(layouts);
+    const next = keys[(keys.indexOf(doc.layout) + 1) % keys.length];
+    return { reply: `How about ${layouts[next as keyof typeof layouts]}?`, chips: ["Try another layout", "Change the motif"], design: { layout: next } };
+  }
+  const motif = MOTIFS.find((x) => l.includes(x.id) || l.includes(x.name.toLowerCase().split(" ")[0]));
+  if (motif) return { reply: `I've drawn ${motif.name.toLowerCase()} onto it.`, chips: ["Change the motif", "Try another layout"], design: { motif: motif.id } };
+  if (/change the motif|another motif|different motif/.test(l)) return { reply: "Choose a motif — each one is hand-drawn.", chips: MOTIFS.slice(0, 6).map((x) => x.name), design: undefined };
+  if (/remove (the )?(invocation|blessing symbol|ganesh|om|cross|bismillah)/.test(l)) return { reply: "Removed.", chips: [], design: { invocation: null } };
+  const inv = (Object.entries(INVOCATIONS) as [keyof typeof INVOCATIONS, (typeof INVOCATIONS)[keyof typeof INVOCATIONS]][]).find(([k, v]) => l.includes(k) || l.includes(v.label.toLowerCase()));
+  if (inv) return { reply: `Added ${inv[1].label} at the top, with respect.`, chips: ["Remove the invocation"], design: { invocation: inv[0] } };
+  if (/bigger names|larger names|names bigger/.test(l)) return { reply: "Names are a little grander now.", chips: [], design: { scale: Math.min((doc.design.scale ?? 1) + 0.15, 1.4) } };
+  if (/smaller names|names smaller/.test(l)) return { reply: "A touch more delicate.", chips: [], design: { scale: Math.max((doc.design.scale ?? 1) - 0.15, 0.7) } };
+  const table = l.match(/table (number )?(\d+)/);
+  if (table && doc.kind === "table") return { reply: `Table ${table[2]} it is.`, chips: [], design: { number: Number(table[2]) } };
+  return null;
 }
 
 async function converseRules(profile: Profile, step: number, message: string, theme: string): Promise<Turn> {

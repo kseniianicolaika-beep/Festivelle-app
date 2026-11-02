@@ -8,6 +8,36 @@ destination, but the product works for weddings anywhere, in English, Russian an
 
 This repo is **the app only**. There's no marketing landing page here: the public site is built separately, and `/` goes straight to the studio (or sign-in).
 
+## What's new: templates, workspaces, agencies
+
+- **12 wedding pieces**, each designed and editable by chat: wedding website, invitation, save-the-date, event cards (haldi, mehendi, sangeet, ZAGS…), Instagram story / WhatsApp status, square post, welcome sign, order of ceremony, menu, table numbers, photo & hashtag sign, and thank-you card.
+- **Template gallery:** 12 named templates per piece (Ashwem Dusk, Lisbon Letter, Maharani, Neva Monogram, Mogra Bloom, Haldi Sun, Noor Lantern, Starlit Sangeet, Assagao Portrait, Moscow Folk, Mehendi Ambi, Lotus Vows), plus 6 website templates. Every preview uses the couple's own names and date.
+- **6 paper layouts** (classic frame, palace arch, editorial, monogram wreath, botanical border, photograph) and **3 website layouts** (romance, editorial, palace arch).
+- **8 design worlds:** Konkan Sunset, Azulejo, Rajwada, Belaya Noch, Mogra, Gulmohar, Noor, Sangeet Night.
+- **14 hand-drawn motifs**, with no AI images: Goan palms, azulejo, Mughal arch, silver birch, jasmine, marigold garland, jaali lattice, starlight, paisley, lotus, entwined rings, doves, Khokhloma berries, mandala.
+- **Optional sacred invocations** (Shri Ganesh, Om, Ik Onkar, Bismillah, cross, Orthodox cross) are only ever added when the couple asks.
+- **AI-first editing:** the chat knows which piece is open. “Make a menu”, “use the lotus motif”, “palace arch layout”, “write the menu in Russian”, “bigger names” and “table 7” all change that piece directly. The AI can only adjust whitelisted design fields, so the result always stays elegant.
+- **Asset library:** each workspace gets a shared library of photographs, logos and monograms (Neon Object Storage, drag-and-drop) and the motif collection.
+- **Multi-tenant workspaces:** one email can belong to many workspaces (personal or agency). Roles are owner, admin, designer (can edit), client and family (view only). Invitations are private join links, and a workspace switcher sits in the header.
+- **Agencies:** weddings grouped by client, a brand kit (agency name, logo, signature on guest sites: “Designed by us”, “ours + yours” or none), and team management.
+- **Export:** PNG at 3× resolution, and a print / save-as-PDF page for every piece.
+- **Mobile-first studio:** chat is the main screen, and the design opens as a swipe-up sheet.
+- **Support concierge:** a beating heart opens a romantic help card that continues privately on WhatsApp (+91 72186 78536) without looking like WhatsApp.
+
+## Pricing (billing switches on later)
+
+| For couples | Price | |
+|---|---|---|
+| Draft | Free | Unlimited AI design, every template |
+| Celebration | ₹4,999 / $79 one-time | Publish, invitations, live RSVPs, all 12 pieces |
+| Heritage | ₹14,999 / $199 one-time | Custom domain, concierge, family collaborators |
+
+| For agencies | Price | |
+|---|---|---|
+| Atelier | ₹7,999 / $99 per month | 3 seats, 10 active weddings, brand kit |
+| Maison | ₹19,999 / $249 per month | 10 seats, unlimited weddings, full white-label, custom domains |
+| Grand Maison | Custom | Unlimited seats, private templates, dedicated concierge |
+
 ## What's built
 
 | Area | What it does |
@@ -88,6 +118,12 @@ neon realtime enable --allowed-origin https://<domain>
 3. **Printed invitation suites** through a Goan press.
 4. **Planner seats (B2B):** Goa planners pay monthly to run their clients' sites and RSVPs.
 
+## Data model
+
+`workspaces`, `members` (workspace × user × role), `invites`, `weddings` (belong to a workspace, with an optional client name), `documents` (one per piece: kind, layout, design JSON), `assets` (workspace library), `messages`, `guests`, `rsvps`. Run `node --env-file=.env.local scripts/migrate.mjs`. It's idempotent and backfills workspaces and starter pieces for older data.
+
 ## Roadmap
+
+- **Next:** guest management by household and by event (who's invited to which event), and comments and approvals for clients.
 
 Stripe + Razorpay checkout gating `published`, Resend production domain, streaming AI replies (to hide free-model latency), AI-generated motifs and illustrations, more languages (Konkani, Marathi, Punjabi, Tamil), WhatsApp Business API sending, video invitations, a vendor marketplace, and seating plans.

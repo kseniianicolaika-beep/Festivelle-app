@@ -1,5 +1,7 @@
 import type { Profile } from "./profile";
 import { THEMES } from "./themes";
+import { MOTIFS, INVOCATIONS, isMotif } from "./motifs";
+import { KINDS, PAPER_LAYOUTS, SITE_LAYOUTS, isKind, type Design, type Doc, type Kind } from "./templates";
 
 // All AI runs through OpenRouter using FREE models only.
 // Chosen by a side-by-side test (Nov 2026) on a Russian–Punjabi Sikh couple: Nemotron 3 Ultra gave fluent Russian,
@@ -78,15 +80,53 @@ Design worlds (theme ids): ${THEMES.map((t) => `${t.id} = ${t.mood}`).join("; ")
 
 After onboarding, act on any edit request (dates, times, events, wording, style, language) and confirm warmly.
 
+The couple is editing ONE piece at a time (shown as "Active piece"). Pieces: ${Object.entries(KINDS).map(([k, v]) => `${k} (${v.name})`).join(", ")}.
+You may restyle the active piece via "design": {layout, motif, invocation, theme, texts {eyebrow, headline, body, footer, hashtag},
+ items [{title, detail}] (menu courses or ceremony steps — write them in the guest language, culturally right), align (center|left),
+ scale (0.8–1.3, name size), number (table number), eventIndex (which event an event card shows)}.
+Paper layouts: ${Object.keys(PAPER_LAYOUTS).join(", ")}. Website layouts: ${Object.keys(SITE_LAYOUTS).join(", ")}.
+Motifs (curated line art): ${MOTIFS.map((m) => `${m.id} (${m.name})`).join(", ")}.
+Invocations (ONLY if the couple asks or clearly wants one; never assume religion): ${Object.keys(INVOCATIONS).join(", ")}, or null to remove.
+If they ask for a new piece (e.g. "make a menu", "I need a welcome sign"), set "addPiece" to its kind.
+
 Respond ONLY with JSON:
 {"reply": string, "chips": string[] (2–6 short tappable suggested answers for the next question; [] if none),
  "patch": partial profile {partner1, partner2, culture, tradition, date "YYYY-MM-DD", city, venue,
    events [{name, date "YYYY-MM-DD", time, venue}] (always the FULL list when changing events), vibe, language, story, inviteLine, blessing},
- "theme": theme id or null, "complete": boolean (true once names, culture, venue/city, events, vibe and language are known)}`;
+ "theme": theme id for the WHOLE suite or null, "design": partial design for the active piece or null, "addPiece": kind or null,
+ "complete": boolean (true once names, culture, venue/city, events, vibe and language are known)}`;
 
-export async function aiTurn(profile: Profile, theme: string, history: { role: string; content: string }[], message: string) {
+// Only whitelisted, validated design fields ever reach the database.
+export function cleanDesign(d: unknown, kind?: Kind): Partial<Design> | undefined {
+  if (!d || typeof d !== "object") return undefined;
+  const x = d as Record<string, unknown>;
+  const out: Partial<Design> = {};
+  const layouts: string[] = kind === "website" ? Object.keys(SITE_LAYOUTS) : Object.keys(PAPER_LAYOUTS);
+  if (typeof x.layout === "string" && layouts.includes(x.layout)) (out as Record<string, unknown>).layout = x.layout;
+  if (isMotif(x.motif)) out.motif = x.motif;
+  if (x.invocation === null) out.invocation = null;
+  else if (typeof x.invocation === "string" && x.invocation in INVOCATIONS) out.invocation = x.invocation as Design["invocation"];
+  if (typeof x.theme === "string" && THEMES.some((t) => t.id === x.theme)) out.theme = x.theme;
+  if (x.texts && typeof x.texts === "object") {
+    const t: Record<string, string> = {};
+    for (const k of ["eyebrow", "headline", "body", "footer", "hashtag"]) {
+      const v = (x.texts as Record<string, unknown>)[k];
+      if (typeof v === "string") t[k] = v.slice(0, 400);
+    }
+    out.texts = t;
+  }
+  if (Array.isArray(x.items)) out.items = x.items.slice(0, 12).filter((i) => i && typeof i === "object" && typeof (i as { title?: unknown }).title === "string").map((i) => ({ title: String((i as { title: string }).title).slice(0, 80), detail: (i as { detail?: unknown }).detail ? String((i as { detail: string }).detail).slice(0, 200) : undefined }));
+  if (x.align === "center" || x.align === "left") out.align = x.align;
+  if (typeof x.scale === "number") out.scale = Math.min(Math.max(x.scale, 0.7), 1.4);
+  if (typeof x.number === "number") out.number = Math.max(1, Math.min(999, Math.round(x.number)));
+  if (typeof x.eventIndex === "number") out.eventIndex = Math.max(0, Math.round(x.eventIndex));
+  return Object.keys(out).length ? out : undefined;
+}
+
+export async function aiTurn(profile: Profile, theme: string, history: { role: string; content: string }[], message: string, doc?: Doc | null) {
   const today = new Date().toISOString().slice(0, 10);
-  const out = await complete(SYSTEM, `Today is ${today}. Current theme: ${theme}.\nCurrent profile: ${JSON.stringify(profile)}\n\nCouple says: ${message}`, history);
+  const piece = doc ? `\nActive piece: ${doc.kind} (${KINDS[doc.kind].name}), layout ${doc.layout}, design ${JSON.stringify(doc.design)}` : "";
+  const out = await complete(SYSTEM, `Today is ${today}. Current suite theme: ${theme}.${piece}\nCurrent profile: ${JSON.stringify(profile)}\n\nCouple says: ${message}`, history);
   if (!out || typeof out.reply !== "string") return null;
   const themeOk = THEMES.some((t) => t.id === out.theme);
   return {
@@ -94,6 +134,8 @@ export async function aiTurn(profile: Profile, theme: string, history: { role: s
     chips: Array.isArray(out.chips) ? (out.chips as unknown[]).map(String).slice(0, 6) : [],
     patch: clean(out.patch ?? {}),
     theme: themeOk ? (out.theme as string) : undefined,
+    design: cleanDesign(out.design, doc?.kind),
+    addPiece: isKind(out.addPiece) ? (out.addPiece as Kind) : undefined,
     complete: !!out.complete,
   };
 }

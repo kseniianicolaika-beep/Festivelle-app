@@ -8,14 +8,17 @@ import { Countdown } from "./Countdown";
 import { Petals } from "./fx/Petals";
 import { Reveal } from "./fx/Reveal";
 import { Sparkles } from "./fx/Sparkles";
+import type { MotifId } from "@/lib/motifs";
 
-type Props = { profile: Profile; theme: Theme; heroUrl?: string | null; calendarUrl?: string | null; children?: React.ReactNode; compact?: boolean };
+type Props = { profile: Profile; theme: Theme; heroUrl?: string | null; calendarUrl?: string | null; children?: React.ReactNode; compact?: boolean; layout?: string; motif?: MotifId; credit?: React.ReactNode };
 
-export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, compact }: Props) {
+export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, compact, layout = "romance", motif, credit }: Props) {
   const [a, b] = coupleNames(profile);
   const L = t(profile.language);
   const pad = compact ? "px-6" : "px-6 md:px-12";
-  const dark = theme.motif === "arch";
+  const dark = !!theme.dark;
+  const editorial = layout === "editorial";
+  const arch = layout === "arch";
   return (
     <div lang={profile.language ?? "en"} style={themeVars(theme)} className="relative overflow-hidden bg-[var(--t-bg)] text-[var(--t-ink)] transition-colors duration-1000">
       <Petals count={compact ? 10 : 22} colors={petalColors(theme)} className={compact ? "absolute" : "fixed"} />
@@ -32,21 +35,30 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
           <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_40%,color-mix(in_oklab,var(--t-accent)_14%,transparent),transparent_70%)]" />
         )}
         <Sparkles color={heroUrl ? "#fff3d6" : "var(--t-gold)"} />
-        <div className={`relative ${heroUrl ? "text-white" : ""}`}>
-          <Motif key={theme.id} theme={theme} className="draw mx-auto mb-10 w-52" />
+        {arch && <div aria-hidden className={`pointer-events-none absolute left-1/2 top-[6%] bottom-[4%] -translate-x-1/2 rounded-t-full border border-[var(--t-gold)]/60 ${compact ? "w-[78%]" : "w-[min(86vw,640px)]"}`}><div className="absolute inset-2 rounded-t-full border border-[var(--t-gold)]/25" /></div>}
+        <div className={`relative w-full ${heroUrl ? "text-white" : ""} ${editorial ? `mx-auto max-w-6xl ${compact ? "text-left" : "text-left md:grid md:grid-cols-[1.2fr_1fr] md:items-center md:gap-14"}` : ""}`}>
+          <div>
+          <Motif key={theme.id + (motif ?? "")} theme={theme} motif={motif} className={`draw mb-10 w-52 ${editorial ? "" : "mx-auto"}`} />
           <p className="eyebrow rise mb-6 opacity-80">{L.getting}</p>
-          <h1 className={`display rise rise-2 ${compact ? "text-5xl" : "text-[4.2rem] md:text-[8.5rem]"} leading-[0.92]`}>
+          <h1 className={`display rise rise-2 ${compact ? "text-5xl" : editorial ? "text-[4.2rem] md:text-[7rem]" : "text-[4.2rem] md:text-[8.5rem]"} leading-[0.92]`}>
             <span className={heroUrl ? "" : "foil"}>{a}</span>
-            <span className="script mx-3 block text-[0.55em] text-[var(--t-accent)] md:inline">&amp;</span>
+            <span className={`script mx-3 block text-[0.55em] text-[var(--t-accent)] ${editorial ? "" : "md:inline"}`}>&amp;</span>
             <span className={heroUrl ? "" : "foil"}>{b}</span>
           </h1>
-          <div className="rise rise-3 mx-auto mt-10 flex items-center justify-center gap-4 opacity-80">
+          <div className={`rise rise-3 mt-10 flex items-center gap-4 opacity-80 ${editorial ? "" : "mx-auto justify-center"}`}>
             <span className="h-px w-14 bg-current" />
             <p className="display text-2xl md:text-3xl">{formatDate(profile.date, profile.language)}</p>
             <span className="h-px w-14 bg-current" />
           </div>
           <p className="rise rise-4 mt-2 text-sm tracking-wide opacity-75">{profile.venue || profile.city}</p>
           {profile.date && <div className="rise rise-5"><Countdown date={profile.date} label={L.until} /></div>}
+          </div>
+          {editorial && !compact && (
+            <div className="rise rise-3 relative mt-12 hidden aspect-[3/4] overflow-hidden rounded-t-full border border-[var(--t-gold)]/50 md:block">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,color-mix(in_oklab,var(--t-accent)_25%,var(--t-surface)),var(--t-surface))]" />
+              <div className="absolute inset-0 flex items-center justify-center"><Motif theme={theme} motif={motif} className="draw w-3/4" /></div>
+            </div>
+          )}
         </div>
         {!compact && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-60">
@@ -110,6 +122,7 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
           {profile.blessing && <p className="script mb-4 text-3xl text-[var(--t-accent)]">{profile.blessing}</p>}
           <p className="display text-2xl"><span className="foil">{a[0]}</span> <span className="script text-[var(--t-accent)]">&amp;</span> <span className="foil">{b[0]}</span></p>
           <p className="eyebrow mt-3 text-[var(--t-muted)]">{L.forever}</p>
+          {credit && <div className="mt-10 text-[11px] tracking-wide text-[var(--t-muted)] opacity-80">{credit}</div>}
         </Reveal>
       </footer>
     </div>
