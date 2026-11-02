@@ -30,8 +30,11 @@ export function opening(): Omit<Turn, "profile" | "step"> {
 }
 
 function parseNames(m: string) {
-  const parts = m.split(/\s*(?:&|\+|,|\band\b|\bи\b|\bऔर\b)\s*/i).map((s) => s.trim()).filter(Boolean);
-  return parts.length >= 2 ? [cap(parts[0]), cap(parts[1])] : null;
+  // \b is ASCII-only in JS, so Cyrillic/Devanagari separators need explicit whitespace.
+  const cleaned = m.replace(/^\s*(we are|we're|i am|i'm|мы|это|हम)\s+/iu, "").replace(/[!.?…]+$/u, "").trim();
+  const parts = cleaned.split(/\s*(?:&|\+|,)\s*|\s+(?:and|и|और)\s+/iu).map((s) => s.trim()).filter(Boolean);
+  if (parts.length < 2 || parts.some((p) => p.split(/\s+/).length > 3)) return null;
+  return [cap(parts[0]), cap(parts[1])];
 }
 const cap = (s: string) => s.replace(/^\p{L}/u, (c) => c.toUpperCase());
 
