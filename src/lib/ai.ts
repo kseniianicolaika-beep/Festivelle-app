@@ -34,7 +34,7 @@ async function complete(system: string, user: string, history: { role: string; c
       "content-type": "application/json",
       authorization: `Bearer ${c.key}`,
       "HTTP-Referer": process.env.APP_URL || "https://wedding-builder-two.vercel.app",
-      "X-Title": "Wedding Builder",
+      "X-Title": "Festivelle",
     },
     body: JSON.stringify({
       model: c.models[0],

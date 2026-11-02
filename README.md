@@ -1,6 +1,6 @@
-# Vowline — AI wedding builder
+# Festivelle — AI wedding builder
 
-> Working name. Change it in `src/lib/brand.ts`.
+> The name lives in one place: `src/lib/brand.ts`.
 
 A chat-first, AI wedding designer for **Russian and Indian couples**, made in Goa. The couple talks, and their
 invitation, save-the-date and wedding website (with live RSVPs) design themselves as they answer. Goa is the home
@@ -102,7 +102,7 @@ npm run dev
 
 ## Deploy (Vercel)
 
-The GitHub repo is connected to the Vercel project `lyvena/wedding-builder` (https://wedding-builder-two.vercel.app). Every push to `main` deploys. Environment variables live in Vercel (Production and Preview). For each new app domain:
+The GitHub repo `Akshay115/Festivelle-app` is connected to the Vercel project `lyvena/wedding-builder` (https://wedding-builder-two.vercel.app). Every push to `main` deploys. Environment variables live in Vercel (Production and Preview). For each new app domain:
 
 ```bash
 neon neon-auth domain add https://<domain>

@@ -22,7 +22,7 @@ export default async function calendar(req: Request): Promise<Response> {
   const p = rows[0].profile;
   const couple = `${p.partner1 ?? ""} & ${p.partner2 ?? ""}`;
   const events = (p.events ?? []).filter((e) => e.date);
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Wedding Builder//EN", "CALSCALE:GREGORIAN", `X-WR-CALNAME:${esc(couple)}`];
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Festivelle//EN", "CALSCALE:GREGORIAN", `X-WR-CALNAME:${esc(couple)}`];
   events.forEach((e, i) => {
     const start = stamp(e.date!, e.time);
     lines.push("BEGIN:VEVENT", `UID:${slug}-${i}@wedding`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`, `DTSTART;TZID=Asia/Kolkata:${start}`, "DURATION:PT4H", `SUMMARY:${esc(`${e.name} — ${couple}`)}`, `LOCATION:${esc(e.venue ?? p.venue ?? "")}`, "END:VEVENT");
