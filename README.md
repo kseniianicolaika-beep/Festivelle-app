@@ -2,32 +2,49 @@
 
 > Working name. Change it in `src/lib/brand.ts`.
 
-A chat-first wedding designer for **Russian and Indian couples**, made in Goa. The couple talks, and the
+A chat-first, AI wedding designer for **Russian and Indian couples**, made in Goa. The couple talks, and their
 invitation, save-the-date and wedding website (with live RSVPs) design themselves as they answer. Goa is the home
 destination, but the product works for weddings anywhere, in English, Russian and Hindi.
+
+This repo is **the app only**. There's no marketing landing page here: the public site is built separately, and `/` goes straight to the studio (or sign-in).
 
 ## What's built
 
 | Area | What it does |
 |---|---|
-| **Conversation designer** (`src/lib/designer.ts`) | A guided interview covering names, tradition, date, place, events, vibe, language and story, with tappable chips. Each answer updates the design live. After that, free-form edits like “make it Azulejo”, “move the Sangeet to 13 Feb 2027 at 7pm” or “switch to Russian”. It uses an LLM when one is configured (`src/lib/ai.ts`) and a rule-based editor otherwise. |
-| **Five design worlds** (`src/lib/themes.ts`) | Konkan Sunset, Azulejo, Rajwada, Belaya Noch, Mogra. Each has its own palette and line-art motif. Typography: Cormorant Garamond, Marck Script and Tiro Devanagari, with Cyrillic and Devanagari supported. |
-| **Studio** (`/studio/[id]`) | Chat on the left, live canvas on the right (Invitation / Save the date / Website). Theme swatches, photo upload, and a mobile toggle. |
-| **Wedding website** (`/w/[slug]`) | Hero, countdown, story, events, Goa travel notes, RSVP form, add-to-calendar. Published or unpublished. |
-| **Sending** | Email invitations (Resend), WhatsApp and Telegram share links, a printable / save-as-PDF invitation (`/w/[slug]/invite`), and a saved guest list. |
+| **AI designer** (`src/lib/ai.ts`, `src/lib/designer.ts`) | OpenRouter (`anthropic/claude-sonnet-5.5` by default) runs the whole conversation. It asks one warm question at a time in the couple's language, fills the wedding profile, writes the invitation wording and closing blessing in the guest language, polishes the love story, picks the design world, and carries out free-form edits. If AI is unavailable, a rule-based designer takes over automatically, so the app never breaks. |
+| **Five design worlds** (`src/lib/themes.ts`) | Konkan Sunset, Azulejo, Rajwada, Belaya Noch, Mogra. Each has its own palette, gold-foil tones, falling petals (marigold for Rajwada, birch-white for Belaya Noch, and so on) and a line-art motif that draws itself. |
+| **Studio** (`/studio/[id]`) | Glass chat panel with replies that fade in word by word, a heart typing indicator and spring-animated suggestion chips. Live canvas with a 3D-tilting invitation, blur cross-fades between design worlds, and Invitation / Save-the-date / Website tabs. |
+| **Wedding website** (`/w/[slug]`) | Opens with a **sealed envelope** guests tap to open (wax seal with initials, flap, rising letter). Then a gold-foil hero, countdown, story, an animated events timeline, Goa travel notes, add-to-calendar, and an RSVP form with a heart burst on “yes”. |
+| **Sending** | Email invitations (Resend), WhatsApp and Telegram share links, and a tilting printable / save-as-PDF invitation (`/w/[slug]/invite`). |
 | **Live RSVPs** | Neon Realtime live SQL query. Replies appear in the studio as guests submit them. |
+| **Admin console** (`/admin`) | Every wedding, owner, RSVP and guest count; AI and email status; open any couple's studio. |
 | **Custom domains** | Vercel Domains API (`src/lib/vercel.ts`). `proxy.ts` routes a couple's domain to their site. |
+
+Design system: champagne, blush, rose, wine and gold; Cormorant Garamond, Marck Script and Tiro Devanagari (with Cyrillic and Devanagari support). Animations use `motion` plus CSS: aurora, petals, foil shimmer, line drawing, scroll reveals. All animation respects `prefers-reduced-motion`.
+
+## Admin access
+
+- **akshay@lyvena.xyz** is a permanent platform owner, hard-coded in `src/lib/admin.ts`.
+- Admin is granted by either:
+  1. the Neon Auth **`admin` role** (set with `neon neon-auth user set-role <user-id> --roles admin`); this is already set on akshay@lyvena.xyz's account; or
+  2. an owner email that is **verified**, for example through “Continue with Google”.
+- An unverified password sign-up using an owner email does *not* get admin, so the address can't be hijacked.
+- Add more admins with `ADMIN_EMAILS` (comma-separated, verified emails only) or the Neon role.
 
 ## Neon services
 
 Declared in `neon.ts` and provisioned with `neon deploy`:
 
-- **Postgres** stores weddings, messages, guests and RSVPs. Schema is in `scripts/migrate.mjs`; the app uses the `@neondatabase/serverless` HTTP driver.
-- **Auth** (Managed Better Auth) handles email/password sign-in, through `src/lib/auth/*` and the `/api/auth/[...path]` proxy.
-- **Object Storage** keeps couples' photos in the private `assets` bucket. Uploads go through presigned PUTs, and `/api/media` serves files through signed redirects.
-- **Realtime** powers the live RSVP feed (`src/lib/realtime.ts`, `LiveRsvps.tsx`).
-- **Functions**: `functions/calendar.ts` returns an `.ics` file of the wedding's events, running next to the database.
-- **AI Gateway** is turned off for now because it needs a paid Neon plan. Uncomment `aiGateway` in `neon.ts` after upgrading; `src/lib/ai.ts` picks it up automatically.
+- **Postgres** stores weddings, messages, guests and RSVPs (`scripts/migrate.mjs`), using the `@neondatabase/serverless` HTTP driver.
+- **Auth** (Managed Better Auth) provides email/password and Google sign-in, plus roles.
+- **Object Storage** keeps couples' photos in the private `assets` bucket, using presigned PUTs and signed reads.
+- **Realtime** powers the live RSVP feed.
+- **Functions**: `functions/calendar.ts` returns an `.ics` file of the wedding's events.
+
+## AI (OpenRouter)
+
+Set `OPENROUTER_API_KEY`, and optionally `OPENROUTER_MODEL`, in Vercel and `.env.local`. `/admin` shows whether AI is connected. Neon AI Gateway variables also work if you upgrade Neon, but OpenRouter takes priority.
 
 ## Develop
 
@@ -39,21 +56,24 @@ node --env-file=.env.local scripts/migrate.mjs
 npm run dev
 ```
 
-See `.env.example` for the optional settings: AI, Resend email, Vercel domains.
-
 ## Deploy (Vercel)
 
-The GitHub repo is connected to a Vercel project, so every push to `main` deploys. Copy every variable from `.env.local` into the Vercel project (Production and Preview). Set `APP_URL` and `APP_HOSTS`, and run `neon realtime enable --allowed-origin https://<your-domain>` for each app origin. Neon Auth also needs that domain added as a trusted domain.
+The GitHub repo is connected to the Vercel project `lyvena/wedding-builder` (https://wedding-builder-two.vercel.app). Every push to `main` deploys. Environment variables live in Vercel (Production and Preview). For each new app domain:
 
-**Handing over to the client:** in Vercel, go to Project → Settings → General → *Transfer Project* to move it to the client's team. Domains, env vars and deployments move with it. Transfer the Neon project the same way (Neon Console → Project settings → *Transfer*). Then rotate `NEON_AUTH_COOKIE_SECRET` and the API keys.
+```bash
+neon neon-auth domain add https://<domain>
+neon realtime enable --allowed-origin https://<domain>
+```
+
+**Handing over to the client:** in Vercel, go to Project → Settings → *Transfer Project*. In the Neon Console, go to Project settings → *Transfer*. Before transferring, add akshay@lyvena.xyz as a member of the client's Vercel team and Neon org so infrastructure access continues. In-app admin is unaffected, because it lives in the code and the database. Afterwards, rotate `NEON_AUTH_COOKIE_SECRET` and the API keys.
 
 ## Business model
 
-1. **Freemium, paid per wedding.** Designing is free. Publishing costs **Celebration $79 / ₹4,999** or **Heritage $199 / ₹14,999** (custom domain, print-ready suite, concierge). A one-time price suits a once-in-a-lifetime purchase better than a subscription.
-2. **Goa destination referrals.** This is the bigger revenue line. Couples who say “Goa” are qualified leads for partner venues, planners, photographers and decorators, typically on an 8–15% commission or a fixed lead fee. Russian couples especially value a trusted, Russian-speaking guide to Goa.
-3. **Physical goods:** printed invitation suites through a Goan press, plus welcome bags.
-4. **Planner seats (B2B):** Goa wedding planners pay monthly to run their clients' websites and RSVPs in this product.
+1. **Freemium, paid per wedding:** designing is free; publishing costs **Celebration $79 / ₹4,999** or **Heritage $199 / ₹14,999**.
+2. **Goa destination referrals**, likely the biggest line: venues, planners, photographers and decorators at 8–15% commission. Russian couples especially value a trusted, Russian-speaking guide to Goa.
+3. **Printed invitation suites** through a Goan press.
+4. **Planner seats (B2B):** Goa planners pay monthly to run their clients' sites and RSVPs.
 
 ## Roadmap
 
-Stripe + Razorpay checkout gating `published`, Resend production domain, more languages (Konkani, Marathi, Punjabi, Tamil), WhatsApp Business API sending, video invitations (Remotion), a vendor marketplace, and seating plans.
+Stripe + Razorpay checkout gating `published`, Resend production domain, streaming AI replies, AI-generated motifs and illustrations, more languages (Konkani, Marathi, Punjabi, Tamil), WhatsApp Business API sending, video invitations, a vendor marketplace, and seating plans.

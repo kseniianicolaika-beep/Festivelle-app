@@ -1,6 +1,6 @@
 import type { Profile, WeddingEvent } from "./profile";
 import { pickTheme, THEMES } from "./themes";
-import { aiEdit } from "./ai";
+import { aiEnabled, aiTurn } from "./ai";
 
 export type Turn = { reply: string; chips: string[]; profile: Profile; step: number; theme?: string };
 
@@ -82,7 +82,21 @@ function ask(step: number, p: Profile): Omit<Turn, "profile" | "step"> {
   }
 }
 
-export async function converse(profile: Profile, step: number, message: string, theme: string): Promise<Turn> {
+export async function converse(profile: Profile, step: number, message: string, theme: string, history: { role: string; content: string }[] = []): Promise<Turn> {
+  // AI-first: OpenRouter drives the whole conversation; the rule engine below is the graceful fallback.
+  if (aiEnabled()) {
+    const ai = await aiTurn(profile, theme, history, message).catch((e) => (console.error("aiTurn", e), null));
+    if (ai) {
+      const p = { ...profile, ...ai.patch };
+      const done = ai.complete || step >= DONE;
+      const nextTheme = ai.theme ?? (p.vibe || p.culture ? pickTheme(p.vibe, p.culture) : theme);
+      return { reply: ai.reply, chips: done && !ai.chips.length ? ["Try another style", "Publish & send"] : ai.chips, profile: p, step: done ? DONE : Math.max(step, 1), theme: step >= DONE && !ai.theme ? theme : nextTheme };
+    }
+  }
+  return converseRules(profile, step, message, theme);
+}
+
+async function converseRules(profile: Profile, step: number, message: string, theme: string): Promise<Turn> {
   const m = message.trim();
   const p: Profile = { ...profile };
   let next = step;
@@ -150,9 +164,6 @@ function shiftDate(iso: string, days: number) {
 
 // After onboarding: free-form edits. Uses an LLM when configured, otherwise a careful rule-based editor.
 async function refine(p: Profile, m: string, theme: string): Promise<Turn> {
-  const ai = await aiEdit(p, theme, m).catch(() => null);
-  if (ai) return { reply: ai.reply, chips: ["Try another style", "Publish & send"], profile: { ...p, ...ai.patch }, step: DONE, theme: ai.theme ?? theme };
-
   const lower = m.toLowerCase();
   const named = THEMES.find((t) => lower.includes(t.name.toLowerCase()) || lower.includes(t.id));
   if (named) return { reply: `Done — everything is now in ${named.name}: ${named.mood.toLowerCase()}.`, chips: THEMES.filter((t) => t.id !== named.id).map((t) => t.name), profile: p, step: DONE, theme: named.id };

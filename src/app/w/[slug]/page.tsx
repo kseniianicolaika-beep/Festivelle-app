@@ -4,7 +4,9 @@ import { getWeddingBySlug } from "@/lib/db";
 import { currentUser } from "@/lib/auth/server";
 import { WeddingSite } from "@/components/WeddingSite";
 import { coupleNames, formatDate } from "@/lib/profile";
-import { themeById } from "@/lib/themes";
+import { petalColors, themeById } from "@/lib/themes";
+import { t } from "@/lib/i18n";
+import { EnvelopeIntro } from "@/components/EnvelopeIntro";
 import { RsvpForm } from "./RsvpForm";
 
 
@@ -24,15 +26,20 @@ export default async function Site({ params }: { params: Promise<{ slug: string 
     if (user?.id !== w.owner_id) notFound();
   }
   const fn = process.env.NEON_FUNCTION_CALENDAR_BASE_URL;
+  const theme = themeById(w.theme);
+  const [a, b] = coupleNames(w.profile);
   return (
+    <>
+    <EnvelopeIntro id={w.slug} initials={`${a[0]}${b[0]}`} names={`${a} & ${b}`} label={t(w.profile.language).open} bg={theme.bg} accent={theme.accent} gold={theme.gold} ink={theme.ink} petals={petalColors(theme)} />
     <WeddingSite
       profile={w.profile}
-      theme={themeById(w.theme)}
+      theme={theme}
       heroUrl={w.profile.heroKey ? `/api/media?key=${encodeURIComponent(w.profile.heroKey)}` : null}
       calendarUrl={fn && w.profile.events?.length ? `${fn.replace(/\/$/, "")}/?slug=${slug}` : null}
     >
       <RsvpForm slug={slug} lang={w.profile.language ?? "en"} />
     </WeddingSite>
+    </>
   );
 }
 

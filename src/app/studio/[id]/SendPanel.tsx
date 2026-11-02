@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { motion } from "motion/react";
 import type { Wedding } from "@/lib/db";
 import { LiveRsvps } from "./LiveRsvps";
 
@@ -35,10 +36,10 @@ export function SendPanel({ wedding, published, onPublish, onClose, realtimeUrl,
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-ink/30 backdrop-blur-sm" onClick={onClose}>
-      <aside onClick={(e) => e.stopPropagation()} className="fade h-full w-full max-w-md overflow-y-auto bg-paper p-7 shadow-2xl">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex justify-end bg-wine/25 backdrop-blur-md" onClick={onClose}>
+      <motion.aside initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 260, damping: 32 }} onClick={(e) => e.stopPropagation()} className="scroll-soft h-full w-full max-w-md overflow-y-auto bg-paper/95 p-7 shadow-[-30px_0_80px_-30px_rgba(74,20,36,.5)] backdrop-blur-xl">
         <div className="flex items-center justify-between">
-          <h2 className="display text-3xl">Share your wedding</h2>
+          <h2 className="display text-[2.2rem]">Share your <em className="text-rose">joy</em></h2>
           <button onClick={onClose} className="text-2xl text-muted hover:text-ink" aria-label="Close">×</button>
         </div>
 
@@ -91,7 +92,7 @@ export function SendPanel({ wedding, published, onPublish, onClose, realtimeUrl,
           <p className="font-medium">Replies, live</p>
           <LiveRsvps weddingId={wedding.id} realtimeUrl={realtimeUrl} />
         </div>
-      </aside>
-    </div>
+      </motion.aside>
+    </motion.div>
   );
 }

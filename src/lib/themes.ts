@@ -41,4 +41,13 @@ export const themeVars = (t: Theme) =>
     "--t-muted": t.muted,
     "--t-accent": t.accent,
     "--t-gold": t.gold,
+    "--foil-a": t.motif === "arch" ? "#d6a650" : t.motif === "birch" ? "#3f5166" : t.motif === "azulejo" ? "#173f86" : t.motif === "jasmine" ? "#4f5f45" : "#7a4f22",
+    "--foil-b": t.motif === "arch" ? "#fff0c4" : t.motif === "birch" ? "#a9bccf" : t.motif === "azulejo" ? "#6f97d6" : t.motif === "jasmine" ? "#b5a27a" : "#d7a95c",
   }) as React.CSSProperties;
+
+export const petalColors = (t: Theme) =>
+  t.motif === "birch" ? ["#e6ecf2", "#cfd9e3", "#f5f7fa", "#bac7d4"]
+  : t.motif === "azulejo" ? ["#dbe5f5", "#f6e8d8", "#c7d6ef", "#ffffff"]
+  : t.motif === "arch" ? ["#f2a93b", "#e8862a", "#f7c66b", "#c9452f"] // marigold
+  : t.motif === "jasmine" ? ["#ffffff", "#f4f1e6", "#e9eee2", "#fbfaf3"]
+  : ["#f2c6c8", "#e8a3ab", "#f6dcd2", "#f0b49a"];

@@ -13,6 +13,8 @@ export type Profile = {
   language?: "en" | "ru" | "hi";
   story?: string;
   heroKey?: string; // object-storage key of the couple's photo
+  inviteLine?: string; // AI-written invitation wording, in the guest language
+  blessing?: string; // short closing line / blessing for the card and site
 };
 
 export const LANG_LABEL = { en: "English", ru: "Русский", hi: "हिन्दी" } as const;

@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { isAdmin } from "./admin";
 
 // HTTP driver: ideal for Vercel serverless/edge — one round trip per query, no pool to manage.
 export const sql = neon(process.env.DATABASE_URL!);
@@ -15,9 +16,11 @@ export type Wedding = {
   custom_domain: string | null;
 };
 
-export async function getWeddingForOwner(id: string, ownerId: string) {
+// Owners see their own weddings; platform admins see every wedding.
+export async function getWeddingForUser(id: string, user: { id: string } & Parameters<typeof isAdmin>[0]) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const rows = (await sql`SELECT * FROM weddings WHERE id = ${id} AND owner_id = ${ownerId}`) as Wedding[];
+  const admin = isAdmin(user);
+  const rows = (await sql`SELECT * FROM weddings WHERE id = ${id} AND (owner_id = ${user!.id} OR ${admin})`) as Wedding[];
   return rows[0] ?? null;
 }
 
