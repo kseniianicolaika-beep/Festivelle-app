@@ -1,13 +1,24 @@
 import type { Profile } from "./profile";
 import { THEMES } from "./themes";
 
-// All AI runs through OpenRouter (OpenAI-compatible). Neon AI Gateway is used instead if its vars exist.
+// All AI runs through OpenRouter using FREE models only.
+// Chosen by a side-by-side test (Nov 2026) on a Russian–Punjabi Sikh couple: Nemotron 3 Ultra gave fluent Russian,
+// correctly named the Anand Karaj ceremony and kept clean structured output. The others are automatic fallbacks
+// (OpenRouter tries them in order if one is rate-limited). `openrouter/free` is the final safety net.
+export const FREE_MODELS = [
+  "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "nvidia/nemotron-3.5-super-vl:free",
+  "openrouter/free",
+]; // OpenRouter accepts at most 3 models per request
+
+const isFree = (m: string) => m.endsWith(":free") || m === "openrouter/free";
+
 function config() {
-  if (process.env.OPENROUTER_API_KEY)
-    return { base: "https://openrouter.ai/api/v1", key: process.env.OPENROUTER_API_KEY, model: process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-5.5" };
-  if (process.env.NEON_AI_GATEWAY_BASE_URL && process.env.NEON_AI_GATEWAY_TOKEN)
-    return { base: process.env.NEON_AI_GATEWAY_BASE_URL.replace(/\/$/, ""), key: process.env.NEON_AI_GATEWAY_TOKEN, model: process.env.AI_MODEL || "claude-sonnet-5-5" };
-  return null;
+  if (!process.env.OPENROUTER_API_KEY) return null;
+  // An override is honoured only if it's a free model — paid models can never be selected by accident.
+  const override = (process.env.OPENROUTER_MODEL ?? "").trim();
+  const models = (override && isFree(override) ? [override, ...FREE_MODELS.filter((m) => m !== override)] : FREE_MODELS).slice(0, 3);
+  return { base: "https://openrouter.ai/api/v1", key: process.env.OPENROUTER_API_KEY, models };
 }
 
 export const aiEnabled = () => !!config();
@@ -24,14 +35,14 @@ async function complete(system: string, user: string, history: { role: string; c
       "X-Title": "Wedding Builder",
     },
     body: JSON.stringify({
-      model: c.model,
+      model: c.models[0],
+      models: c.models, // OpenRouter fallback routing, free models only
       temperature: 0.7,
-      response_format: { type: "json_object" },
       messages: [{ role: "system", content: system }, ...history.slice(-16), { role: "user", content: user }],
     }),
-    signal: AbortSignal.timeout(40_000),
+    signal: AbortSignal.timeout(55_000),
   });
-  if (!res.ok) throw new Error(`AI ${res.status}`);
+  if (!res.ok) throw new Error(`AI ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const json = await res.json();
   const text: string = json.choices?.[0]?.message?.content ?? "";
   return JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));

@@ -12,7 +12,7 @@ This repo is **the app only**. There's no marketing landing page here: the publi
 
 | Area | What it does |
 |---|---|
-| **AI designer** (`src/lib/ai.ts`, `src/lib/designer.ts`) | OpenRouter (`anthropic/claude-sonnet-5.5` by default) runs the whole conversation. It asks one warm question at a time in the couple's language, fills the wedding profile, writes the invitation wording and closing blessing in the guest language, polishes the love story, picks the design world, and carries out free-form edits. If AI is unavailable, a rule-based designer takes over automatically, so the app never breaks. |
+| **AI designer** (`src/lib/ai.ts`, `src/lib/designer.ts`) | OpenRouter **free models only** run the whole conversation. It asks one warm question at a time in the couple's language, fills the wedding profile, writes the invitation wording and closing blessing in the guest language, polishes the love story, picks the design world, and carries out free-form edits. If AI is unavailable, a rule-based designer takes over automatically, so the app never breaks. |
 | **Five design worlds** (`src/lib/themes.ts`) | Konkan Sunset, Azulejo, Rajwada, Belaya Noch, Mogra. Each has its own palette, gold-foil tones, falling petals (marigold for Rajwada, birch-white for Belaya Noch, and so on) and a line-art motif that draws itself. |
 | **Studio** (`/studio/[id]`) | Glass chat panel with replies that fade in word by word, a heart typing indicator and spring-animated suggestion chips. Live canvas with a 3D-tilting invitation, blur cross-fades between design worlds, and Invitation / Save-the-date / Website tabs. |
 | **Wedding website** (`/w/[slug]`) | Opens with a **sealed envelope** guests tap to open (wax seal with initials, flap, rising letter). Then a gold-foil hero, countdown, story, an animated events timeline, Goa travel notes, add-to-calendar, and an RSVP form with a heart burst on “yes”. |
@@ -42,9 +42,23 @@ Declared in `neon.ts` and provisioned with `neon deploy`:
 - **Realtime** powers the live RSVP feed.
 - **Functions**: `functions/calendar.ts` returns an `.ics` file of the wedding's events.
 
-## AI (OpenRouter)
+## AI (OpenRouter, free models only)
 
-Set `OPENROUTER_API_KEY`, and optionally `OPENROUTER_MODEL`, in Vercel and `.env.local`. `/admin` shows whether AI is connected. Neon AI Gateway variables also work if you upgrade Neon, but OpenRouter takes priority.
+The app uses **only free OpenRouter models**, so there's no per-message cost. This is enforced in code: `OPENROUTER_MODEL` is ignored unless it ends in `:free`.
+
+| Order | Model | Why |
+|---|---|---|
+| 1 | `nvidia/nemotron-3-ultra-550b-a55b:free` | Best in a side-by-side test (Nov 2026) on a Russian–Punjabi Sikh couple: fluent Russian, correctly named the Anand Karaj ceremony, clean structured output. About 15–20 s per reply. |
+| 2 | `nvidia/nemotron-3.5-super-vl:free` | Strong fallback with good Russian. |
+| 3 | `openrouter/free` | OpenRouter's free auto-router, the last safety net. |
+
+OpenRouter switches to the next model automatically if one is busy or rate-limited (it allows at most 3 per request). If all three fail, the built-in rule-based designer answers, so the chat never breaks.
+
+Also tested: `google/gemma-4-31b-it:free` and `gemma-4-26b` (rate-limited upstream) and `thinkingmachines/inkling:free` (restricted to agent tools).
+
+Setup: put `OPENROUTER_API_KEY` in Vercel and `.env.local`. `/admin` shows whether AI is connected.
+
+Free-tier limits: OpenRouter caps free-model usage per day (the cap is higher once the account has ever bought credits), and free models can be slower or busy at peak times. For heavy production traffic, consider a small credit top-up or a paid model later.
 
 ## Develop
 
@@ -76,4 +90,4 @@ neon realtime enable --allowed-origin https://<domain>
 
 ## Roadmap
 
-Stripe + Razorpay checkout gating `published`, Resend production domain, streaming AI replies, AI-generated motifs and illustrations, more languages (Konkani, Marathi, Punjabi, Tamil), WhatsApp Business API sending, video invitations, a vendor marketplace, and seating plans.
+Stripe + Razorpay checkout gating `published`, Resend production domain, streaming AI replies (to hide free-model latency), AI-generated motifs and illustrations, more languages (Konkani, Marathi, Punjabi, Tamil), WhatsApp Business API sending, video invitations, a vendor marketplace, and seating plans.
