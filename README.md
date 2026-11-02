@@ -2,6 +2,16 @@
 
 > The name lives in one place: `src/lib/brand.ts`.
 
+| | |
+|---|---|
+| **Live app** | https://wedding-builder-two.vercel.app |
+| **Repository** | https://github.com/Akshay115/Festivelle-app (renamed from `Wedding-builder`; old links redirect) |
+| **Hosting** | Vercel project `lyvena/wedding-builder`, auto-deploys from `main` |
+| **Backend** | Neon project `raspy-union-09496702`, branch `production` (Postgres, Auth, Object Storage, Realtime, Functions) |
+| **AI** | OpenRouter, free models only |
+| **Support** | Heart concierge → WhatsApp +91 72186 78536 |
+| **Platform owner** | akshay@lyvena.xyz (permanent admin) |
+
 A chat-first, AI wedding designer for **Russian and Indian couples**, made in Goa. The couple talks, and their
 invitation, save-the-date and wedding website (with live RSVPs) design themselves as they answer. Goa is the home
 destination, but the product works for weddings anywhere, in English, Russian and Hindi.
