@@ -4,13 +4,13 @@ import { t } from "@/lib/i18n";
 import type { Theme } from "@/lib/themes";
 import { themeVars } from "@/lib/themes";
 import { Motif } from "./Motif";
+import { Countdown } from "./Countdown";
 
 type Props = { profile: Profile; theme: Theme; heroUrl?: string | null; calendarUrl?: string | null; children?: React.ReactNode; compact?: boolean };
 
 export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, compact }: Props) {
   const [a, b] = coupleNames(profile);
   const L = t(profile.language);
-  const days = profile.date ? Math.ceil((new Date(profile.date).getTime() - Date.now()) / 864e5) : null;
   const pad = compact ? "px-6" : "px-6 md:px-12";
   return (
     <div lang={profile.language ?? "en"} style={themeVars(theme)} className="bg-[var(--t-bg)] text-[var(--t-ink)] transition-colors duration-700">
@@ -30,11 +30,7 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
           <p className="eyebrow rise rise-3 mt-6 opacity-80">{L.getting}</p>
           <p className="display rise rise-4 mt-6 text-2xl">{formatDate(profile.date, profile.language)}</p>
           <p className="mt-1 text-sm opacity-75">{profile.venue || profile.city}</p>
-          {days !== null && days > 0 && (
-            <p className="mt-8 inline-block rounded-full border border-current/30 px-4 py-1.5 text-xs tracking-widest opacity-80">
-              {days} {L.until}
-            </p>
-          )}
+          {profile.date && <Countdown date={profile.date} label={L.until} />}
         </div>
       </header>
 

@@ -1,17 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Wedding } from "@/lib/db";
 import { LiveRsvps } from "./LiveRsvps";
 
 type Props = { wedding: Wedding; published: boolean; onPublish: (v: boolean) => void; onClose: () => void; realtimeUrl: string; capabilities: { email: boolean; domains: boolean } };
 
 export function SendPanel({ wedding, published, onPublish, onClose, realtimeUrl, capabilities }: Props) {
-  const [origin, setOrigin] = useState("");
+  const [origin] = useState(() => (typeof window === "undefined" ? "" : window.location.origin));
   const [guests, setGuests] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [domain, setDomain] = useState(wedding.custom_domain ?? "");
   const [domainStatus, setDomainStatus] = useState<string | null>(null);
-  useEffect(() => setOrigin(window.location.origin), []);
   const url = `${origin}/w/${wedding.slug}`;
   const text = encodeURIComponent(`You're invited to our wedding ✨ ${url}`);
 
