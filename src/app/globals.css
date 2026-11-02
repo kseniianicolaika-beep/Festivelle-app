@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --ivory: #faf6f0;
+  --paper: #fffdf9;
+  --ink: #221a16;
+  --muted: #7b6d64;
+  --line: #e7ddd1;
+  --gold: #b08d57;
+  --rose: #b4533f;
+}
+
+@theme inline {
+  --color-ivory: var(--ivory);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-gold: var(--gold);
+  --color-rose: var(--rose);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-cormorant);
+  --font-script: var(--font-script);
+}
+
+html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body { background: var(--ivory); color: var(--ink); font-family: var(--font-inter), system-ui, sans-serif; }
+.display { font-family: var(--font-cormorant), var(--font-deva), Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+.script { font-family: var(--font-script), var(--font-cormorant), cursive; }
+.eyebrow { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; }
+:lang(hi) .display, .deva { font-family: var(--font-deva), var(--font-cormorant), serif; }
+
+.grain { background-image: radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px); background-size: 3px 3px; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
+.rise-2 { animation-delay: .15s; } .rise-3 { animation-delay: .3s; } .rise-4 { animation-delay: .45s; }
+@keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+.fade { animation: fadein .6s ease both; }
+@media (prefers-reduced-motion: reduce) { .rise, .fade { animation: none; } }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: 999px; padding: .8rem 1.5rem; font-size: 13px; letter-spacing: .08em; transition: all .25s ease; }
+.btn-dark { background: var(--ink); color: var(--paper); } .btn-dark:hover { background: #3a2c25; }
+.btn-ghost { border: 1px solid var(--line); background: var(--paper); } .btn-ghost:hover { border-color: var(--gold); }
+.field { width: 100%; border: 1px solid var(--line); background: var(--paper); border-radius: 14px; padding: .85rem 1rem; outline: none; transition: border-color .2s; }
+.field:focus { border-color: var(--gold); }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+}
