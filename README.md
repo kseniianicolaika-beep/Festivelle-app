@@ -194,7 +194,11 @@ Design system: champagne, blush, rose, wine and gold; Cormorant Garamond, Marck 
 
 ## Admin access
 
-- **akshay@lyvena.xyz** is a permanent platform owner, hard-coded in `src/lib/admin.ts`.
+- **akshay@lyvena.xyz** and **kseniia@festivelle.love** are permanent platform owners, hard-coded in `src/lib/admin.ts`,
+  and both accounts hold the Neon Auth `admin` role.
+- **Unlimited, forever:** owners never hit a paywall, AI limit, credit charge, watermark or hosting expiry — they can
+  publish any package, use the Luxury editor and all video tiers, and their published sites never expire
+  (`isUnlimitedId` in `src/lib/admin.ts`, used by AI metering and publishing).
 - Admin is granted by either:
   1. the Neon Auth **`admin` role** (set with `neon neon-auth user set-role <user-id> --roles admin`); this is already set on akshay@lyvena.xyz's account; or
   2. an owner email that is **verified**, for example through “Continue with Google”.

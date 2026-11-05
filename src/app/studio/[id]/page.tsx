@@ -25,7 +25,7 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
     <>
     <PurchaseBridge weddingId={id} />
     <Studio
-      wedding={wedding}
+      wedding={isAdmin(user) ? { ...wedding, tier: wedding.tier ?? "luxury", video_tier: "luxury", expires_at: null } : wedding}
       initialMessages={messages}
       initialDocs={docs}
       initialPhotos={photos}

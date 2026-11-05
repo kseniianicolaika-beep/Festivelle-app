@@ -1,3 +1,4 @@
+import { isUnlimitedId } from "./admin";
 import { sql, type Wedding } from "./db";
 import { getPricing, isTier, TIERS, type Currency, type Pricing, type Tier } from "./pricing";
 import { displayNames, priceGroup } from "./occasions";
@@ -112,7 +113,8 @@ export async function activate(weddingId: string) {
   await assignSubdomain(w);
   if (!w.activated_at) {
     const now = new Date();
-    await sql`UPDATE weddings SET published = true, activated_at = ${now.toISOString()}, expires_at = ${initialExpiry(w.profile, now, P).toISOString()}, updated_at = now() WHERE id = ${weddingId}`;
+    const forever = await isUnlimitedId(w.owner_id);
+    await sql`UPDATE weddings SET published = true, activated_at = ${now.toISOString()}, expires_at = ${forever ? null : initialExpiry(w.profile, now, P).toISOString()}, updated_at = now() WHERE id = ${weddingId}`;
   } else await sql`UPDATE weddings SET published = true, updated_at = now() WHERE id = ${weddingId}`;
   return true;
 }
@@ -152,6 +154,7 @@ export async function creditBalance(userId: string) {
 
 // AI metering: a free daily allowance, then credits. Returns false when the user is out of both.
 export async function meter(userId: string, kind: "text" | "visual") {
+  if (await isUnlimitedId(userId)) return true;
   const P = await getPricing();
   const free = kind === "text" ? P.credits.freeTextPerDay : P.credits.freeVisuals;
   const cost = kind === "text" ? P.credits.textCost : P.credits.visualCost;
