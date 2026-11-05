@@ -124,3 +124,11 @@ body { background: var(--ivory); color: var(--ink); font-family: var(--font-inte
   body { background: white; }
   .grain::after { display: none; }
 }
+
+/* ── Visual editor: drag-to-reorder + collaborator presence ── */
+.fv-draggable { cursor: grab; position: relative; }
+.fv-draggable:active { cursor: grabbing; }
+.fv-drop-before { box-shadow: 0 -3px 0 0 var(--rose); }
+.fv-drop-after { box-shadow: 0 3px 0 0 var(--rose); }
+[data-peer] { outline: 2px dashed var(--peer, #c06c78); outline-offset: 4px; position: relative; }
+[data-peer]::after { content: attr(data-peer); position: absolute; top: -1.6rem; left: 0; z-index: 40; background: var(--peer, #c06c78); color: #fff; font: 500 11px/1 system-ui, sans-serif; padding: 4px 8px; border-radius: 999px; white-space: nowrap; pointer-events: none; }

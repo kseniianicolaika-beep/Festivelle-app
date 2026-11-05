@@ -1,12 +1,16 @@
 "use client";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Collab } from "./editor/Collab";
+import { SectionList } from "./editor/SectionList";
+import { Cropper } from "./editor/Cropper";
+import type { Presence } from "@/lib/realtime";
 import type { Wedding } from "@/lib/db";
 import type { Profile } from "@/lib/profile";
 import { displayNames, occasionOf, OCCASIONS } from "@/lib/occasions";
 import { OCCASION_THEMES, THEMES, themeById } from "@/lib/themes";
-import { sectionLayout, SECTIONS } from "@/lib/templates";
+import { sectionLayout } from "@/lib/templates";
 import { MOTIFS, INVOCATIONS, type MotifId, type InvocationId } from "@/lib/motifs";
 import { KINDS, PAPER_LAYOUTS, SITE_LAYOUTS, type Doc } from "@/lib/templates";
 import { PieceView } from "@/components/designs/PieceView";
@@ -78,6 +82,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
   const [picker, setPicker] = useState<null | "motif" | "photo" | "sections">(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(editable);
+  const [crop, setCrop] = useState<string | null>(null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -98,6 +103,26 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
   }, [messages, thinking]);
 
   const replaceDoc = (d: Doc) => setDocs((all) => all.map((x) => (x.id === d.id ? d : x)));
+  const [peers, setPeers] = useState<Presence[]>([]);
+  const pendingRemote = useRef(false);
+  // A collaborator (or their chat) changed something: pull a fresh snapshot. Never clobber text being typed.
+  const pullRemote = useCallback(async () => {
+    if ((document.activeElement as HTMLElement | null)?.isContentEditable) { pendingRemote.current = true; return; }
+    pendingRemote.current = false;
+    const r = await fetch(`/api/weddings/${wedding.id}/state`, { cache: "no-store" });
+    if (!r.ok) return;
+    const st = await r.json();
+    setProfile(st.profile);
+    setThemeId(st.theme);
+    setPublished(st.published);
+    setDocs(st.docs);
+    setMessages((cur) => (st.messages.length >= cur.length ? st.messages.map((m: Msg) => ({ ...m, chips: m.chips ?? [] })) : cur));
+  }, [wedding.id]);
+  useEffect(() => {
+    const onBlur = () => { if (pendingRemote.current) setTimeout(() => void pullRemote(), 50); };
+    document.addEventListener("focusout", onBlur);
+    return () => document.removeEventListener("focusout", onBlur);
+  }, [pullRemote]);
   const say = (content: string) => {
     const id = crypto.randomUUID();
     setFresh(id);
@@ -176,6 +201,22 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
     } catch (e) { alert((e as Error).message); } finally { setBusy(null); }
   }
 
+  async function saveCrop(file: File) {
+    setBusy("Saving your crop…");
+    try {
+      const asset = await uploadAsset(file, wedding.workspace_id, { weddingId: wedding.id });
+      setPhotos((p) => [asset, ...p]);
+      setCrop(null);
+      await applyPhoto(asset.key);
+    } catch (e) { alert((e as Error).message); } finally { setBusy(null); }
+  }
+  const pieceAspect = (() => {
+    if (!doc || doc.kind === "website") return 3 / 2;
+    const [a, b] = String(KINDS[doc.kind].ratio).split("/").map(Number);
+    return a && b ? a / b : 1;
+  })();
+  const currentPhoto = doc?.kind === "website" ? profile.heroKey : doc?.design.photoKey;
+
   async function download(share = false) {
     const node = pieceRef.current?.querySelector("[data-piece]") as HTMLElement | null;
     if (!node || !doc) return;
@@ -238,6 +279,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
           <button onClick={() => { setSheet(true); setNudge(false); }} className="btn btn-ghost relative !px-4 !py-2 md:hidden">
             Design{nudge && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-ping rounded-full bg-rose" />}
           </button>
+          <Collab weddingId={wedding.id} realtimeUrl={realtimeUrl} docId={doc?.id} path={selectedPath} onRemoteChange={pullRemote} onPeers={setPeers} />
           <Link href={`/studio/${wedding.id}/video`} className="btn btn-ghost hidden !px-4 !py-2 sm:inline-flex" title="Video invitation">▶ Video</Link>
           {editable && <button onClick={() => setPanel(true)} className="btn btn-dark !px-4 !py-2 md:!px-5 md:!py-2.5">{published ? "Share" : "Publish ♥"}</button>}
         </div>
@@ -361,22 +403,8 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="glass scroll-soft relative z-30 mx-4 mt-2 max-h-[38dvh] overflow-y-auto rounded-3xl p-4 md:mx-5">
                 {picker === "sections" ? (
                   <div>
-                    <p className="mb-2 text-[12px] text-muted">Reorder or hide sections — or just say “move the gallery up”.</p>
-                    <ul className="space-y-1">
-                      {sec.order.map((s, i) => {
-                        const off = sec.hidden.has(s);
-                        const save = (order: string[], hidden: string[]) => patchDoc({ sections: { order, hidden } });
-                        const swap = (j: number) => { const o = [...sec.order]; [o[i], o[j]] = [o[j], o[i]]; save(o, [...sec.hidden]); };
-                        return (
-                          <motion.li layout key={s} className={`flex items-center gap-2 rounded-2xl bg-white/70 px-3 py-2 text-sm ${off ? "opacity-50" : ""}`}>
-                            <span className="flex-1">{SECTIONS[s]}</span>
-                            <button disabled={i === 0} onClick={() => swap(i - 1)} className="rounded-full px-2 text-muted hover:text-wine disabled:opacity-20" aria-label="Move up">↑</button>
-                            <button disabled={i === sec.order.length - 1} onClick={() => swap(i + 1)} className="rounded-full px-2 text-muted hover:text-wine disabled:opacity-20" aria-label="Move down">↓</button>
-                            <button onClick={() => save(sec.order, off ? [...sec.hidden].filter((x) => x !== s) : [...sec.hidden, s])} className="w-14 rounded-full px-2 text-[12px] text-rose">{off ? "Show" : "Hide"}</button>
-                          </motion.li>
-                        );
-                      })}
-                    </ul>
+                    <p className="mb-2 text-[12px] text-muted">Drag to reorder (or drag sections right on the preview), tap to hide — or just say “move the gallery up”.</p>
+                    <SectionList order={sec.order} hidden={[...sec.hidden]} onChange={(order, hidden) => patchDoc({ sections: { order, hidden } })} />
                   </div>
                 ) : picker === "motif" ? (
                   <>
@@ -400,6 +428,13 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
                   </>
                 ) : (
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-6">
+                    {currentPhoto && editable && (
+                      <button onClick={() => setCrop(currentPhoto)} className="relative block aspect-square overflow-hidden rounded-2xl ring-2 ring-wine" title="Crop the current photo">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={assetUrl(currentPhoto)} alt="" className="h-full w-full object-cover opacity-70" />
+                        <span className="absolute inset-0 grid place-items-center text-[11px] font-medium text-wine"><span className="rounded-full bg-white/90 px-2 py-1">✂ Crop current</span></span>
+                      </button>
+                    )}
                     <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-rose/50 bg-white/50 text-center text-[11px] text-rose hover:bg-blush">
                       <span className="text-xl">+</span>Upload
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
@@ -412,6 +447,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={assetUrl(p.key)} alt="" loading="lazy" className="h-full w-full object-cover" />
                           </button>
+                          {editable && <button onClick={() => setCrop(p.key)} className="absolute left-1.5 top-1.5 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] text-wine shadow" title="Crop, then use">✂</button>}
                           {doc.kind === "website" && (
                             <button onClick={() => patchDoc({ gallery: inGallery ? doc.design.gallery!.filter((k) => k !== p.key) : [...(doc.design.gallery ?? []), p.key] })} className={`absolute bottom-1.5 right-1.5 rounded-full px-2 py-0.5 text-[10px] shadow ${inGallery ? "bg-wine text-white" : "bg-white/90 text-wine"}`}>{inGallery ? "♥ Gallery" : "+ Gallery"}</button>
                           )}
@@ -437,6 +473,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
               onProfile={(p) => setProfile((x) => ({ ...x, ...p }))}
               onMessage={(m) => setMessages((all) => [...all, { ...m, chips: m.chips ?? [] }])}
               onPhotoSlot={() => setPicker("photo")}
+              peers={peers.filter((x) => x.doc_id === doc.id && x.path)}
               onAsk={() => { setSheet(false); setTimeout(() => inputRef.current?.focus(), 350); }}
             >
               <div className="scroll-soft relative z-10 flex flex-1 overflow-y-auto p-5 md:p-6">{Canvas}</div>
@@ -451,6 +488,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
       <AnimatePresence>{busy && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-wine px-5 py-2.5 text-sm text-white shadow-xl"><span className="heartbeat mr-2 inline-block">♥</span>{busy}</motion.div>}</AnimatePresence>
       <AnimatePresence>{gallery && <Gallery profile={profile} mode={gallery.mode} initialKind={gallery.mode === "restyle" ? doc?.kind : occ === "greeting" ? "greeting" : "invite"} onPick={pick} onClose={() => setGallery(null)} />}</AnimatePresence>
       <AnimatePresence>
+        {crop && <Cropper key={crop} src={`/api/media?key=${encodeURIComponent(crop)}&raw=1`} pieceAspect={pieceAspect} onDone={saveCrop} onClose={() => setCrop(null)} />}
         {panel && <SendPanel wedding={wedding} published={published} onPublish={async (v) => { if (await patchWedding({ published: v })) setPublished(v); }} onClose={() => setPanel(false)} realtimeUrl={realtimeUrl} capabilities={capabilities} />}
       </AnimatePresence>
     </div>

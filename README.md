@@ -122,6 +122,16 @@ history (`doc_versions`). Chat and editor write the same design — one source o
 as a quiet chat line (`messages.kind = 'edit'`) so the AI knows the context. **Point and ask:** select an element and
 say “make this warmer” or “translate this to Russian”; the AI receives the selected element.
 
+- **Live collaboration** — couples, family and planners edit together in real time. Any change (chat turn, visual
+  edit, theme, publish) bumps a per-celebration signal via Postgres triggers (`collab_signal`), streamed with Neon
+  Realtime; other open studios refresh instantly (never mid-typing). Presence (`collab_presence`, 15 s heartbeat) shows
+  who's here as avatars, and what each person has selected glows on the preview in their colour.
+- **Drag-to-reorder sections** — drag sections directly on the website preview (desktop), or use the touch-friendly
+  drag list under “Sections” (works on phones). Each move is logged to the chat and undoable.
+- **Photo cropping** — ✂ on any photo (or “Crop current”) opens a cropper: drag to position, pinch/scroll/slide to zoom,
+  aspect presets (this piece, original, 1:1, 4:5, 3:2, 16:9). Saves a new high-quality JPEG (≤2400 px) to the library
+  and applies it; the original is kept.
+
 ## Guests
 
 - Guest list `/studio/[id]/guests`: households, per-event invitations, plus-ones, meal & dietary answers, CSV
@@ -216,7 +226,7 @@ neon realtime enable --allowed-origin https://<domain>
 
 ## Data model
 
-`settings` (pricing + template curation JSON), `doc_versions`, `guest_photos`, guests (+ household, events, token, plus-ones), `orders`, `promos`, `partners`, `credits`, `ai_usage`, `weddings` (+ `tier`, `video_tier`, `activated_at`, `expires_at`, `subdomain`; occasion in `profile.occasion`), `workspaces`, `members` (workspace × user × role), `invites`, `weddings` (belong to a workspace, with an optional client name), `documents` (one per piece: kind, layout, design JSON), `assets` (workspace library), `messages`, `guests`, `rsvps`. Run `node --env-file=.env.local scripts/migrate.mjs`. It's idempotent and backfills workspaces and starter pieces for older data.
+`settings` (pricing + template curation JSON), `doc_versions`, `collab_signal`, `collab_presence`, `guest_photos`, guests (+ household, events, token, plus-ones), `orders`, `promos`, `partners`, `credits`, `ai_usage`, `weddings` (+ `tier`, `video_tier`, `activated_at`, `expires_at`, `subdomain`; occasion in `profile.occasion`), `workspaces`, `members` (workspace × user × role), `invites`, `weddings` (belong to a workspace, with an optional client name), `documents` (one per piece: kind, layout, design JSON), `assets` (workspace library), `messages`, `guests`, `rsvps`. Run `node --env-file=.env.local scripts/migrate.mjs`. It's idempotent and backfills workspaces and starter pieces for older data.
 
 ## Roadmap
 

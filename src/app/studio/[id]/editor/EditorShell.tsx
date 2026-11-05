@@ -1,5 +1,6 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Presence } from "@/lib/realtime";
 import { AnimatePresence, motion } from "motion/react";
 import { EditContext, type EditCtx } from "@/components/designs/Editable";
 import { sectionLayout, SECTIONS, type Doc, type SectionId } from "@/lib/templates";
@@ -22,6 +23,7 @@ type Props = {
   onMessage: (m: EditMsg) => void;
   onPhotoSlot: (slot: string) => void;
   onAsk: (path: string) => void;
+  peers?: Presence[];
   children: React.ReactNode;
 };
 
@@ -31,7 +33,7 @@ const quote = (v: string) => `“${v.length > 70 ? v.slice(0, 70) + "…" : v}�
 // The visual editor. Wraps the live preview: <E> texts become inline-editable, [data-edit-photo] opens the photo
 // picker, [data-edit-section] selects a website section. Every edit PATCHes the same design/profile the chat uses
 // and leaves a quiet ✎ line in the conversation, so the AI always knows what changed.
-export function EditorShell({ weddingId, doc, profile, luxury, enabled, selected, onSelect, onDoc, onProfile, onMessage, onPhotoSlot, onAsk, children }: Props) {
+export function EditorShell({ weddingId, doc, profile, luxury, enabled, selected, onSelect, onDoc, onProfile, onMessage, onPhotoSlot, onAsk, peers = [], children }: Props) {
   const [undo, setUndo] = useState<Undo[]>([]);
   const [redo, setRedo] = useState<Undo[]>([]);
   const [history, setHistory] = useState<null | { id: string; label: string | null; created_at: string }[]>(null);
@@ -132,6 +134,70 @@ export function EditorShell({ weddingId, doc, profile, luxury, enabled, selected
     const name = SECTIONS[secId] ?? secId;
     void patchDoc({ sections: { order, hidden: [...hidden] } }, d === 0 ? `${hidden.has(secId) ? "Hid" : "Showed"} the ${name} section` : `Moved the ${name} section ${d < 0 ? "up" : "down"}`);
   };
+  // ── Drag-to-reorder sections directly on the preview (desktop; touch uses the Sections list) ──
+  const wrap = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<{ from: SectionId; over: SectionId | null; after: boolean } | null>(null);
+  useEffect(() => {
+    const root = wrap.current;
+    if (!root) return;
+    const els = root.querySelectorAll<HTMLElement>("[data-edit-section]");
+    els.forEach((el) => {
+      if (enabled && sec) { el.draggable = true; el.classList.add("fv-draggable"); }
+      else { el.draggable = false; el.classList.remove("fv-draggable"); }
+    });
+  });
+  useEffect(() => {
+    const root = wrap.current;
+    if (!root) return;
+    root.querySelectorAll(".fv-drop-before,.fv-drop-after").forEach((el) => el.classList.remove("fv-drop-before", "fv-drop-after"));
+    if (drag?.over) root.querySelector(`[data-edit-section="${drag.over}"]`)?.classList.add(drag.after ? "fv-drop-after" : "fv-drop-before");
+  }, [drag]);
+  const sectionAt = (t: EventTarget | null) => (t as HTMLElement | null)?.closest<HTMLElement>("[data-edit-section]") ?? null;
+  const dnd = enabled && sec ? {
+    onDragStart: (e: React.DragEvent) => {
+      if ((e.target as HTMLElement).isContentEditable) return;
+      const el = sectionAt(e.target);
+      if (!el) return;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", el.dataset.editSection!);
+      setDrag({ from: el.dataset.editSection as SectionId, over: null, after: false });
+    },
+    onDragOver: (e: React.DragEvent) => {
+      if (!drag) return;
+      const el = sectionAt(e.target);
+      if (!el) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      const over = el.dataset.editSection as SectionId;
+      const after = e.clientY > r.top + r.height / 2;
+      if (drag.over !== over || drag.after !== after) setDrag({ ...drag, over, after });
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      if (!drag?.over || !sec || drag.over === drag.from) return setDrag(null);
+      const order = sec.order.filter((x) => x !== drag.from);
+      const i = order.indexOf(drag.over) + (drag.after ? 1 : 0);
+      order.splice(i, 0, drag.from);
+      const name = SECTIONS[drag.from] ?? drag.from;
+      setDrag(null);
+      void patchDoc({ sections: { order, hidden: [...sec.hidden] } }, `Moved the ${name} section`);
+    },
+    onDragEnd: () => setDrag(null),
+  } : {};
+
+  // Collaborators' selections glow on the preview in their colour.
+  useEffect(() => {
+    const root = wrap.current;
+    if (!root) return;
+    root.querySelectorAll<HTMLElement>("[data-peer]").forEach((el) => { el.removeAttribute("data-peer"); el.style.removeProperty("--peer"); });
+    for (const p of peers) {
+      if (!p.path) continue;
+      const sel = p.path.startsWith("section:") ? `[data-edit-section="${p.path.slice(8)}"]` : p.path.startsWith("photo:") ? `[data-edit-photo="${p.path.slice(6)}"]` : `[data-edit-path="${p.path}"]`;
+      const el = root.querySelector<HTMLElement>(sel);
+      if (el) { el.setAttribute("data-peer", p.name); el.style.setProperty("--peer", p.color); }
+    }
+  });
+
   const scale = doc.design.scale ?? 1;
   const accent = doc.design.palette?.accent;
 
@@ -209,7 +275,7 @@ export function EditorShell({ weddingId, doc, profile, luxury, enabled, selected
           <AnimatePresence>{err && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-2 rounded-full bg-wine px-4 py-1.5 text-center text-[12.5px] text-white">{err}</motion.p>}</AnimatePresence>
         </div>
       )}
-      <div onClickCapture={onClickCapture} className="contents">{children}</div>
+      <div ref={wrap} onClickCapture={onClickCapture} {...dnd} className="contents">{children}</div>
     </EditContext.Provider>
   );
 }

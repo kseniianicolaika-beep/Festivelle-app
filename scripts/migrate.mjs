@@ -222,6 +222,39 @@ const statements = [
     created_at timestamptz NOT NULL DEFAULT clock_timestamp()
   )`,
   `CREATE INDEX IF NOT EXISTS doc_versions_doc_idx ON doc_versions(document_id, created_at DESC)`,
+
+  // ── Live collaboration: a per-celebration change signal (bumped by triggers) + presence ──
+  `CREATE TABLE IF NOT EXISTS collab_signal (
+    wedding_id uuid PRIMARY KEY REFERENCES weddings(id) ON DELETE CASCADE,
+    version bigint NOT NULL DEFAULT 0,
+    at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS collab_presence (
+    wedding_id uuid NOT NULL REFERENCES weddings(id) ON DELETE CASCADE,
+    user_id text NOT NULL,
+    name text NOT NULL,
+    color text NOT NULL,
+    path text,
+    doc_id uuid,
+    seen_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (wedding_id, user_id)
+  )`,
+  `CREATE OR REPLACE FUNCTION collab_bump() RETURNS trigger LANGUAGE plpgsql AS $$
+   DECLARE wid uuid;
+   BEGIN
+     IF TG_TABLE_NAME = 'weddings' THEN wid := NEW.id;
+     ELSIF TG_OP = 'DELETE' THEN wid := OLD.wedding_id;
+     ELSE wid := NEW.wedding_id; END IF;
+     INSERT INTO collab_signal (wedding_id, version, at) VALUES (wid, 1, now())
+     ON CONFLICT (wedding_id) DO UPDATE SET version = collab_signal.version + 1, at = now();
+     RETURN NULL;
+   END $$`,
+  `DROP TRIGGER IF EXISTS collab_documents ON documents`,
+  `CREATE TRIGGER collab_documents AFTER INSERT OR UPDATE OR DELETE ON documents FOR EACH ROW EXECUTE FUNCTION collab_bump()`,
+  `DROP TRIGGER IF EXISTS collab_messages ON messages`,
+  `CREATE TRIGGER collab_messages AFTER INSERT ON messages FOR EACH ROW EXECUTE FUNCTION collab_bump()`,
+  `DROP TRIGGER IF EXISTS collab_weddings ON weddings`,
+  `CREATE TRIGGER collab_weddings AFTER UPDATE ON weddings FOR EACH ROW WHEN (OLD.profile IS DISTINCT FROM NEW.profile OR OLD.theme IS DISTINCT FROM NEW.theme OR OLD.published IS DISTINCT FROM NEW.published) EXECUTE FUNCTION collab_bump()`,
 ];
 
 for (const s of statements) await sql.query(s);
