@@ -7,6 +7,7 @@ import { WeddingSite } from "@/components/WeddingSite";
 import { themeById } from "@/lib/themes";
 import { Paper } from "@/components/designs/Paper";
 import { occasionOf } from "@/lib/occasions";
+import { ScaledFrame } from "@/components/marketing/Live";
 
 const GROUPS = ["Stationery", "Online", "Social", "Greetings", "On the day", "After"] as const;
 export type Pick = { kind: Kind; layout: string; theme: string; motif?: string; fonts?: string; template?: string };
@@ -22,7 +23,7 @@ export function Gallery({ profile, initialKind, mode, onPick, onClose }: { profi
         <div className="flex items-start justify-between gap-4 px-6 pb-3 pt-6 md:px-8">
           <div>
             <p className="eyebrow text-rose">{mode === "add" ? "Template gallery" : "Restyle this piece"}</p>
-            <h2 className="display mt-1 text-3xl md:text-4xl">Choose a <em className="text-rose">beginning</em> — then refine it in chat</h2>
+            <h2 className="t-h2 mt-1">Choose a <em className="text-rose">beginning</em> — then refine it in chat</h2>
           </div>
           <button onClick={onClose} className="rounded-full p-2 text-2xl leading-none text-muted hover:bg-blush" aria-label="Close">×</button>
         </div>
@@ -50,13 +51,11 @@ export function Gallery({ profile, initialKind, mode, onPick, onClose }: { profi
                   <motion.button key={tpl.id} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.035 }} whileHover={{ y: -6 }} onClick={() => onPick({ kind, layout: tpl.layout, theme: tpl.theme, motif: tpl.motif, fonts: tpl.fonts, template: tpl.template })} className="group text-left">
                     <div className="pointer-events-none transition duration-500 group-hover:drop-shadow-2xl">
                       {kind === "website" ? (
-                        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-black/5">
-                          <div className="origin-top-left scale-[0.42]" style={{ width: "238%" }}>
-                            <WeddingSite profile={profile} theme={th} layout={tpl.layout} motif={tpl.motif} design={{ fonts: tpl.fonts }} compact />
-                          </div>
-                        </div>
+                        <ScaledFrame width={1100} className="aspect-[4/3] rounded-[14px] bg-white ring-1 ring-black/5">
+                          <WeddingSite profile={profile} theme={th} layout={tpl.layout} motif={tpl.motif} design={{ fonts: tpl.fonts, template: tpl.template }} compact />
+                        </ScaledFrame>
                       ) : (
-                        <Paper kind={kind} layout={tpl.layout} design={{ ...defaultDesign(kind, profile), motif: tpl.motif, fonts: tpl.fonts }} profile={profile} theme={th} animate={false} />
+                        <div className="overflow-hidden rounded-[3px] shadow-[0_24px_50px_-30px_rgba(74,20,36,.6)]"><Paper kind={kind} layout={tpl.layout} design={{ ...defaultDesign(kind, profile), motif: tpl.motif, fonts: tpl.fonts, template: tpl.template }} profile={profile} theme={th} animate={false} /></div>
                       )}
                     </div>
                     <p className="display mt-3 text-xl">{tpl.name}</p>

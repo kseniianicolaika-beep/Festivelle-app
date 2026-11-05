@@ -9,6 +9,7 @@ import { CARD_LAYOUTS } from "./layouts/cards";
 import { INVOCATIONS } from "@/lib/motifs";
 import { KINDS, type Design, type Kind } from "@/lib/templates";
 import { Motif } from "../Motif";
+import { bespokeFor } from "@/templates/registry";
 import { Sparkles } from "../fx/Sparkles";
 
 type Props = { kind: Kind; layout: string; design: Design; profile: Profile; theme: Theme; photoUrl?: string | null; animate?: boolean; className?: string };
@@ -55,7 +56,13 @@ const Corner = ({ className }: { className: string }) => (
   </svg>
 );
 
-export function Paper({ kind, layout, design, profile, theme, photoUrl, animate = true, className = "" }: Props) {
+export function Paper(props: Props) {
+  const B = bespokeFor(props.design?.template);
+  if (B) return <B.card {...props} />;
+  return <GenericPaper {...props} />;
+}
+
+function GenericPaper({ kind, layout, design, profile, theme, photoUrl, animate = true, className = "" }: Props) {
   const [a, b] = nameParts(profile);
   const both = b ? `${a} & ${b}` : a;
   const c = content(kind, design, profile);

@@ -7,7 +7,7 @@ import { nameParts, OCCASIONS, occasionLine, occasionOf } from "@/lib/occasions"
 import { petalColors, themeById, themeVars } from "@/lib/themes";
 import { isAdmin } from "@/lib/admin";
 import { activeWorkspace, canEdit } from "@/lib/workspace";
-import { Aurora } from "@/components/fx/Aurora";
+import { Wash } from "@/components/fx/Wash";
 import { Reveal } from "@/components/fx/Reveal";
 import { Petals } from "@/components/fx/Petals";
 import { Motif } from "@/components/Motif";
@@ -32,21 +32,20 @@ export default async function Studio() {
     : [["", weddings] as [string, Row[]]];
 
   return (
-    <main className="grain relative min-h-dvh overflow-hidden">
-      <Aurora />
-      <Petals count={10} />
+    <main className="relative min-h-dvh overflow-x-clip">
+      <Wash />
       <StudioNav current={current} list={list} email={user.email} admin={isAdmin(user)} active="weddings" />
-      <div className="relative z-10 mx-auto max-w-6xl px-5 pb-28 pt-6 md:px-6">
+      <div className="relative z-10 mx-auto max-w-[1320px] px-5 pb-28 pt-10 md:px-10">
         <Reveal>
-          <p className="eyebrow text-rose">{agency ? "Agency studio" : "Your studio"}</p>
-          <h1 className="display mt-3 text-[2.6rem] leading-[1.05] md:text-6xl">{agency ? <>Every client&apos;s <em className="text-rose">love story</em></> : <>Celebrations, <em className="text-rose">in progress</em></>}</h1>
+          <p className="kicker text-rose">{agency ? "Agency studio" : "Your studio"}</p>
+          <h1 className="t-h1 mt-5">{agency ? <>Every client&apos;s <em className="text-rose">love story</em></> : <>Celebrations, <em className="text-rose">in progress</em></>}</h1>
         </Reveal>
 
         {canEdit(current.role) && (
           <Reveal delay={0.1}>
-            <div className="glass mt-8 flex flex-col gap-2 rounded-[28px] p-2 sm:flex-row sm:items-center">
+            <div className="mt-10 flex flex-col gap-2 rounded-[30px] border border-white/70 bg-white/55 p-2 shadow-[0_24px_60px_-40px_rgba(74,20,36,.6)] backdrop-blur-xl sm:flex-row sm:items-center">
               <p className="flex-1 px-5 py-3 font-display text-lg italic text-muted">Weddings, birthdays, baby showers, anniversaries, greetings — each begins with a conversation.</p>
-              <Link href="/studio/new" className="btn btn-dark text-center">+ Begin a new celebration</Link>
+              <Link href="/studio/new" className="btn btn-dark !px-6 !py-3.5 text-center">Begin a new celebration<span className="btn-arrow">→</span></Link>
             </div>
           </Reveal>
         )}
@@ -54,13 +53,13 @@ export default async function Studio() {
         {groups.map(([client, rows]) => (
           <section key={client} className="mt-12">
             {agency && <Reveal><h2 className="display mb-5 flex items-center gap-3 text-2xl"><span className="h-px w-8 bg-gold" />{client}<span className="text-sm text-muted">({rows.length})</span></h2></Reveal>}
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {rows.map((w, i) => {
                 const th = themeById(w.theme);
                 const [a, b] = nameParts(w.profile);
                 return (
                   <Reveal key={w.id} delay={i * 0.06}>
-                    <Link href={`/studio/${w.id}`} style={themeVars(th)} className="group relative block aspect-[4/5] overflow-hidden rounded-[28px] bg-[var(--t-bg)] p-6 text-[var(--t-ink)] shadow-[0_30px_60px_-40px_rgba(74,20,36,.6)] ring-1 ring-[var(--t-gold)]/30 transition duration-700 hover:-translate-y-2 hover:shadow-[0_50px_90px_-40px_rgba(74,20,36,.7)]">
+                    <Link href={`/studio/${w.id}`} style={themeVars(th)} className="paper-tex group relative block aspect-[4/5] overflow-hidden rounded-[6px] bg-[var(--t-bg)] p-6 text-[var(--t-ink)] shadow-[0_30px_60px_-40px_rgba(74,20,36,.6)] ring-1 ring-[var(--t-gold)]/30 transition duration-1000 ease-[var(--ease-expo)] hover:-translate-y-2 hover:shadow-[0_50px_90px_-40px_rgba(74,20,36,.7)]">
                       <Petals count={6} colors={petalColors(th)} className="absolute opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
                       <div className="relative flex h-full flex-col justify-between">
                         <div className="flex items-center justify-between">

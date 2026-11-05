@@ -21,6 +21,7 @@ import { Aurora } from "@/components/fx/Aurora";
 import { Petals } from "@/components/fx/Petals";
 import { Tilt } from "@/components/fx/Tilt";
 import { Heart } from "@/components/fx/Heart";
+import { Seal, Wordmark } from "@/components/brand/Wordmark";
 import { assetUrl, uploadAsset, type Asset } from "@/lib/upload-client";
 import { SendPanel } from "./SendPanel";
 import { openSupport } from "@/components/SupportHeart";
@@ -84,6 +85,19 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
   const [editMode, setEditMode] = useState(editable);
   const [crop, setCrop] = useState<string | null>(null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [device, setDevice] = useState<"desktop" | "phone">("desktop");
+  const [chatOpen, setChatOpen] = useState(true);
+  // First-minute onboarding: until the first answers (names) arrive, the design waits softly out of focus,
+  // then "blooms" into place the moment it has something to say.
+  const [bloom, setBloom] = useState(0);
+  const [bloomToast, setBloomToast] = useState(false);
+  const named = !!profile.partner1;
+  const wasNamed = useRef(named);
+  useEffect(() => {
+    if (named && !wasNamed.current) { setBloom((b) => b + 1); setNudge(true); setBloomToast(true); }
+    wasNamed.current = named;
+  }, [named]);
+  useEffect(() => { if (!bloomToast) return; const t = setTimeout(() => setBloomToast(false), 8000); return () => clearTimeout(t); }, [bloomToast]);
   const inputRef = useRef<HTMLInputElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const pieceRef = useRef<HTMLDivElement>(null);
@@ -236,41 +250,61 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
     } catch { alert("Couldn’t prepare the image — please try again."); } finally { setBusy(null); }
   }
 
+  const designKey = doc ? [doc.id, doc.layout, doc.design.theme ?? themeId, doc.design.template ?? "", doc.design.fonts ?? "", doc.design.motif ?? "", bloom, device].join("|") : "";
   const Canvas = doc && (
-    <div ref={pieceRef} className="m-auto flex w-full justify-center">
+    <div ref={pieceRef} className={`relative m-auto flex w-full justify-center transition-[filter,opacity,transform] duration-[1600ms] ease-[var(--ease-expo)] ${!named && editable ? "opacity-60 blur-[5px] saturate-[.7] scale-[.985]" : ""}`}>
       <AnimatePresence mode="wait">
-        <motion.div key={doc.id + doc.layout + (doc.design.theme ?? themeId)} initial={{ opacity: 0, y: 24, scale: 0.97, filter: "blur(10px)" }} animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, y: -16, scale: 0.98, filter: "blur(8px)" }} transition={{ duration: 0.7, ease }} className="flex w-full justify-center">
+        <motion.div
+          key={designKey}
+          initial={{ opacity: 0, y: 18, scale: 0.975, filter: "blur(10px)", clipPath: "circle(18% at 50% 42%)" }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)", clipPath: "circle(150% at 50% 42%)" }}
+          exit={{ opacity: 0, y: -10, scale: 0.985, filter: "blur(8px)", transition: { duration: 0.35 } }}
+          transition={{ duration: 1.05, ease: [0.16, 1, 0.3, 1] }}
+          className="flex w-full justify-center"
+        >
           {doc.kind === "website" ? (
-            <div className="w-full max-w-[760px] overflow-hidden rounded-[26px] bg-white shadow-[0_60px_120px_-60px_rgba(74,20,36,.6)] ring-1 ring-black/5">
-              <div className="flex items-center gap-2 border-b border-line bg-white/80 px-4 py-2.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#f3b6b6]" /><span className="h-2.5 w-2.5 rounded-full bg-[#f3dcb0]" /><span className="h-2.5 w-2.5 rounded-full bg-[#c9e3c4]" />
-                <span className="mx-auto truncate rounded-full bg-ivory px-4 py-1 text-[11px] text-muted">🔒 {wedding.custom_domain ?? `…/w/${wedding.slug}`}</span>
+            device === "phone" ? (
+              <div className="device-phone shrink-0" style={{ width: "min(392px, calc(100vw - 40px))" }}>
+                <div className="screen">
+                  <div data-piece className="scroll-soft h-[min(72dvh,780px)] overflow-y-auto">
+                    <PieceView doc={doc} profile={profile} suiteTheme={themeId} rsvpSlot={<div className="py-6 text-center"><p className="display text-3xl">Kindly reply</p><p className="mt-2 text-sm text-[var(--t-muted)]">Your guests RSVP right here.</p></div>} />
+                  </div>
+                </div>
               </div>
-              <div data-piece className="scroll-soft max-h-[64dvh] overflow-y-auto md:max-h-[70dvh]">
-                <PieceView doc={doc} profile={profile} suiteTheme={themeId} rsvpSlot={<div className="py-6 text-center"><p className="display text-3xl">Kindly reply</p><p className="mt-2 text-sm text-[var(--t-muted)]">Your guests RSVP right here.</p></div>} />
+            ) : (
+              <div className="device-browser w-full max-w-[1080px]">
+                <div className="device-bar">
+                  <i /><i /><i />
+                  <span className="mx-auto flex max-w-[70%] items-center gap-1.5 truncate rounded-full bg-white/80 px-4 py-1 text-[11px] text-muted"><svg viewBox="0 0 16 16" className="h-2.5 w-2.5 shrink-0" fill="currentColor" aria-hidden><path d="M4 7V5a4 4 0 1 1 8 0v2h.5A1.5 1.5 0 0 1 14 8.5v5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5v-5A1.5 1.5 0 0 1 3.5 7H4Zm2 0h4V5a2 2 0 1 0-4 0v2Z" /></svg>{wedding.custom_domain ?? (wedding.subdomain ? `${wedding.subdomain}.festivelle.com` : `…/w/${wedding.slug}`)}</span>
+                </div>
+                <div data-piece className="scroll-soft max-h-[64dvh] overflow-y-auto md:max-h-[calc(100dvh-262px)]">
+                  <PieceView doc={doc} profile={profile} suiteTheme={themeId} rsvpSlot={<div className="py-6 text-center"><p className="display text-3xl">Kindly reply</p><p className="mt-2 text-sm text-[var(--t-muted)]">Your guests RSVP right here.</p></div>} />
+                </div>
               </div>
-            </div>
+            )
           ) : (
             // Fit the whole piece in view: width is limited by the available height × the piece's aspect ratio.
             <MaybeTilt on={!editMode}>
-              <div style={{ width: `min(${KINDS[doc.kind].ratio === "7/5" ? 560 : 430}px, calc(100vw - 40px), calc((100dvh - 330px) * ${KINDS[doc.kind].ratio}))` }}>
+              <div className="shadow-[0_1px_1px_rgba(74,20,36,.06),0_50px_90px_-50px_rgba(74,20,36,.7)]" style={{ width: `min(${KINDS[doc.kind].ratio === "7/5" ? 620 : 460}px, calc(100vw - 40px), calc((100dvh - 330px) * ${KINDS[doc.kind].ratio}))` }}>
               <div data-piece><PieceView doc={doc} profile={profile} suiteTheme={themeId} /></div>
               </div>
             </MaybeTilt>
           )}
         </motion.div>
       </AnimatePresence>
+      {bloom > 0 && <span key={`ring-${bloom}`} aria-hidden className="bloom-ring pointer-events-none absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--gold)]" />}
     </div>
   );
 
   return (
     <div className="grain relative flex h-dvh flex-col overflow-hidden bg-ivory">
-      <Aurora colors={[`${theme.accent}30`, `${theme.gold}38`, "#f3c9cf66", "#fbe7dc88"]} />
+      <Aurora colors={[`${theme.accent}22`, `${theme.gold}30`, "#f3c9cf55", "#fbe7dc88"]} />
 
       <header className="relative z-30 flex items-center justify-between gap-2 px-3 py-2.5 md:px-6 md:py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Link href="/studio" className="display flex shrink-0 items-center gap-2 text-[1.3rem]"><Heart className="heartbeat h-3 w-3" color="var(--rose)" /><span className="hidden sm:inline">{BRAND.name}</span></Link>
-          <span className="truncate font-display text-lg italic text-muted">{profile.partner1 ? names : `a new ${OCCASIONS[occ].name.toLowerCase()}`}</span>
+          <Link href="/studio" className="flex shrink-0 items-center" aria-label={`${BRAND.name} studio`}><Seal className="h-8 w-8 sm:hidden" /><span className="hidden sm:inline"><Wordmark size="text-[1.45rem]" /></span></Link>
+          <span className="hidden h-5 w-px bg-line-strong sm:block" />
+          <span className="truncate font-display text-[1.15rem] italic text-ink-soft">{profile.partner1 ? names : `a new ${OCCASIONS[occ].name.toLowerCase()}`}</span>
           {adminView && <span className="hidden rounded-full bg-wine px-3 py-1 text-[10px] tracking-widest text-[#fbeee6] sm:inline">ADMIN VIEW</span>}
           {!editable && <span className="rounded-full bg-blush px-3 py-1 text-[10px] tracking-widest text-wine">VIEW ONLY</span>}
         </div>
@@ -280,14 +314,20 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
             Design{nudge && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-ping rounded-full bg-rose" />}
           </button>
           <Collab weddingId={wedding.id} realtimeUrl={realtimeUrl} docId={doc?.id} path={selectedPath} onRemoteChange={pullRemote} onPeers={setPeers} />
-          <Link href={`/studio/${wedding.id}/video`} className="btn btn-ghost hidden !px-4 !py-2 sm:inline-flex" title="Video invitation">▶ Video</Link>
+          <Link href={`/studio/${wedding.id}/video`} className="link-u hidden px-2 text-[13px] text-ink-soft sm:inline" title="Video invitation">▶ Video</Link>
           {editable && <button onClick={() => setPanel(true)} className="btn btn-dark !px-4 !py-2 md:!px-5 md:!py-2.5">{published ? "Share" : "Publish ♥"}</button>}
         </div>
       </header>
 
       <div className="relative z-10 flex min-h-0 flex-1 gap-4 md:px-4 md:pb-4">
-        {/* ── Conversation ── */}
-        <section className="glass flex w-full flex-col overflow-hidden md:w-[400px] md:rounded-[30px] lg:w-[450px]">
+        {/* ── Conversation: a floating, letter-like panel (collapsible on desktop so the design can take the stage) ── */}
+        <section className={`glass flex w-full flex-col overflow-hidden transition-[width,opacity,margin] duration-700 ease-[var(--ease-expo)] md:rounded-[30px] md:shadow-[0_40px_90px_-50px_rgba(74,20,36,.55)] ${chatOpen ? "md:w-[380px] lg:w-[420px]" : "md:pointer-events-none md:-mr-4 md:w-0 md:opacity-0"}`}>
+          <div className="hidden items-center justify-between border-b border-white/60 px-6 py-3 md:flex">
+            <p className="flex items-center gap-2 text-[10.5px] uppercase tracking-[.28em] text-muted"><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose/50" /><span className="relative inline-flex h-2 w-2 rounded-full bg-rose" /></span>Your designer</p>
+            <button onClick={() => setChatOpen(false)} className="rounded-full p-1.5 text-muted transition hover:bg-white/70 hover:text-ink" title="Hide the conversation — let the design take the stage" aria-label="Hide conversation">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M15 6l-6 6 6 6" /></svg>
+            </button>
+          </div>
           <div ref={scroller} className="scroll-soft flex-1 space-y-5 overflow-y-auto px-5 py-6 md:px-6">
             <AnimatePresence initial={false}>
               {messages.map((m) => m.kind === "edit" ? (
@@ -311,6 +351,15 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
             )}
           </div>
 
+          <AnimatePresence>
+            {bloomToast && (
+              <motion.button initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} onClick={() => { setBloomToast(false); setSheet(true); setNudge(false); }} className="mx-4 mb-2 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#5a1a2e] to-[#2a1a1f] px-4 py-3 text-left text-[#fbeee6] shadow-[0_20px_40px_-20px_rgba(74,20,36,.9)] md:hidden">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-lg">✦</span>
+                <span className="flex-1"><span className="block font-display text-lg italic leading-tight">Your design just bloomed</span><span className="text-[12px] opacity-70">Tap to see it — then keep talking</span></span>
+                <span>→</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
           {editable && (
             <>
               <AnimatePresence>
@@ -342,15 +391,20 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
         </section>
 
         {/* ── Live canvas (bottom sheet on phones) ── */}
-        <section className={`fixed inset-x-0 bottom-0 top-[52px] z-40 flex flex-col overflow-hidden rounded-t-[28px] bg-ivory shadow-[0_-30px_60px_-30px_rgba(74,20,36,.5)] transition-transform duration-500 ease-[cubic-bezier(.2,.8,.2,1)] md:static md:z-auto md:min-w-0 md:flex-1 md:translate-y-0 md:rounded-[30px] md:bg-transparent md:shadow-none ${sheet ? "translate-y-0" : "translate-y-[105%]"}`} style={{ backgroundImage: `radial-gradient(60% 55% at 50% 48%, ${theme.gold}2e, transparent 75%)` }}>
-          <Petals count={10} colors={theme.petals} className="absolute" />
+        <section className={`fixed inset-x-0 bottom-0 top-[52px] z-40 flex flex-col overflow-hidden rounded-t-[28px] bg-ivory shadow-[0_-30px_60px_-30px_rgba(74,20,36,.5)] transition-transform duration-500 ease-[cubic-bezier(.2,.8,.2,1)] md:static md:z-auto md:min-w-0 md:flex-1 md:translate-y-0 md:rounded-[30px] md:border md:border-white/50 md:bg-white/25 md:shadow-[inset_0_1px_0_rgba(255,255,255,.7)] ${sheet ? "translate-y-0" : "translate-y-[105%]"}`} style={{ backgroundImage: `radial-gradient(60% 55% at 50% 52%, ${theme.gold}30, transparent 75%), radial-gradient(40% 40% at 80% 10%, ${theme.accent}12, transparent 70%)` }}>
+          <Petals count={8} colors={theme.petals} className="absolute" />
+          {!chatOpen && (
+            <motion.button initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} onClick={() => setChatOpen(true)} className="absolute bottom-6 left-6 z-30 hidden items-center gap-2.5 rounded-full bg-wine py-2.5 pl-3 pr-5 text-[13px] text-[#fbeee6] shadow-[0_20px_40px_-18px_rgba(74,20,36,.8)] md:flex">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-white/15">✦</span>Talk to your designer
+            </motion.button>
+          )}
           <button onClick={() => setSheet(false)} className="relative z-10 mx-auto mt-2 flex flex-col items-center md:hidden" aria-label="Back to chat"><span className="h-1.5 w-12 rounded-full bg-muted/30" /><span className="mt-1 text-[11px] text-muted">back to chat</span></button>
 
           {/* pieces strip */}
           <div className="scroll-soft relative z-10 flex items-end gap-3 overflow-x-auto px-4 pb-2 pt-3 md:px-5">
             {docs.map((d) => (
               <button key={d.id} onClick={() => setActiveId(d.id)} className="group shrink-0 text-center" title={KINDS[d.kind].name}>
-                <div className={`overflow-hidden rounded-lg transition ${d.id === doc?.id ? "ring-2 ring-wine ring-offset-2 ring-offset-ivory" : "opacity-75 group-hover:opacity-100"}`} style={{ width: 46 }}>
+                <div className={`overflow-hidden rounded-[4px] shadow-[0_8px_18px_-12px_rgba(74,20,36,.6)] transition duration-500 ${d.id === doc?.id ? "-translate-y-1 ring-1 ring-wine ring-offset-[3px] ring-offset-ivory" : "opacity-70 group-hover:-translate-y-0.5 group-hover:opacity-100"}`} style={{ width: 48 }}>
                   {d.kind === "website" ? (
                             <div className="flex aspect-[3/4] flex-col items-center justify-center gap-1 ring-1 ring-black/5" style={{ background: themeById(d.design.theme ?? themeId).bg, color: themeById(d.design.theme ?? themeId).accent }}><span className="text-[9px] tracking-widest">www</span><Motif theme={themeById(d.design.theme ?? themeId)} motif={d.design.motif} className="w-9" /></div>
                   ) : (
@@ -371,22 +425,34 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
           {/* toolbar */}
           {editable && doc && (
             <div className="scroll-soft relative z-20 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:flex-wrap md:px-5">
-              <button onClick={() => { setEditMode((v) => !v); setSelectedPath(null); }} className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] ${editMode ? "bg-wine text-white shadow-md" : "glass"}`} title="Edit directly on the preview">✎ {editMode ? "Editing" : "Edit on preview"}</button>
-              <button onClick={() => setGallery({ mode: "restyle" })} className="glass shrink-0 rounded-full px-3.5 py-1.5 text-[13px]">✦ Templates</button>
-              <div className="glass flex shrink-0 rounded-full p-1 text-[12.5px]">
-                {Object.entries(layouts).map(([k, l]) => (
-                  <button key={k} onClick={() => patchDoc({ layout: k })} className="relative rounded-full px-3 py-1">
-                    {doc.layout === k && <motion.span layoutId="lay" className="absolute inset-0 rounded-full bg-wine" transition={{ type: "spring", stiffness: 380, damping: 32 }} />}
-                    <span className={`relative whitespace-nowrap ${doc.layout === k ? "text-white" : "text-muted"}`}>{l}</span>
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setPicker(picker === "motif" ? null : "motif")} className="glass shrink-0 rounded-full px-3.5 py-1.5 text-[13px]">Motif</button>
-              <button onClick={() => setPicker(picker === "photo" ? null : "photo")} className="glass shrink-0 rounded-full px-3.5 py-1.5 text-[13px]">{doc.kind === "website" ? "Photos" : "Photo"}</button>
-              {doc.kind === "website" && <button onClick={() => setPicker(picker === "sections" ? null : "sections")} className="glass shrink-0 rounded-full px-3.5 py-1.5 text-[13px]">Sections</button>}
-              {doc.kind !== "website" && <button onClick={() => download()} className="glass shrink-0 rounded-full px-3.5 py-1.5 text-[13px]">↓ PNG</button>}
-              {(doc.kind === "greeting" || occ === "greeting") && <button onClick={() => download(true)} className="glass shrink-0 rounded-full px-3.5 py-1.5 text-[13px]">Share</button>}
-              {doc.kind !== "website" && <a href={`/studio/${wedding.id}/print/${doc.id}`} target="_blank" className="glass shrink-0 rounded-full px-3.5 py-1.5 text-[13px]">Print / PDF</a>}
+              <button onClick={() => { setEditMode((v) => !v); setSelectedPath(null); }} className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] transition ${editMode ? "bg-wine text-white shadow-md" : "border border-line-strong bg-white/50 text-ink-soft hover:bg-white"}`} title="Edit directly on the preview">✎ {editMode ? "Editing" : "Edit on preview"}</button>
+              {doc.kind === "website" && (
+                <div className="flex shrink-0 rounded-full border border-line-strong bg-white/50 p-0.5 text-[12.5px]" role="group" aria-label="Preview device">
+                  {(["desktop", "phone"] as const).map((d) => (
+                    <button key={d} onClick={() => setDevice(d)} aria-pressed={device === d} className="relative rounded-full px-3 py-1" title={d === "desktop" ? "Desktop preview" : "Phone preview"}>
+                      {device === d && <motion.span layoutId="dev" className="absolute inset-0 rounded-full bg-ink" transition={{ type: "spring", stiffness: 380, damping: 32 }} />}
+                      <span className={`relative flex items-center gap-1.5 ${device === d ? "text-white" : "text-muted"}`}>
+                        {d === "desktop" ? <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="4" width="18" height="12" rx="1.5" /><path d="M8 20h8M12 16v4" /></svg> : <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="7" y="2.5" width="10" height="19" rx="2.5" /><path d="M11 18.5h2" /></svg>}
+                        <span className="hidden lg:inline">{d === "desktop" ? "Desktop" : "Phone"}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => setGallery({ mode: "restyle" })} className="shrink-0 rounded-full border border-line-strong bg-white/50 px-3.5 py-1.5 text-[13px] text-ink-soft transition hover:border-wine/40 hover:bg-white hover:text-ink">✦ Templates</button>
+              <label className="relative flex shrink-0 items-center rounded-full border border-line-strong bg-white/50 pl-3.5 text-[13px] text-ink-soft transition hover:bg-white" title="Layout">
+                <span className="text-[10px] uppercase tracking-[.2em] text-muted">Layout</span>
+                <select value={doc.layout} onChange={(e) => patchDoc({ layout: e.target.value })} className="cursor-pointer appearance-none bg-transparent py-1.5 pl-2 pr-7 font-display text-[15px] italic text-ink outline-none">
+                  {Object.entries(layouts).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+                <span aria-hidden className="pointer-events-none absolute right-3 text-[10px] text-muted">▾</span>
+              </label>
+              <button onClick={() => setPicker(picker === "motif" ? null : "motif")} className="shrink-0 rounded-full border border-line-strong bg-white/50 px-3.5 py-1.5 text-[13px] text-ink-soft transition hover:border-wine/40 hover:bg-white hover:text-ink">Motif</button>
+              <button onClick={() => setPicker(picker === "photo" ? null : "photo")} className="shrink-0 rounded-full border border-line-strong bg-white/50 px-3.5 py-1.5 text-[13px] text-ink-soft transition hover:border-wine/40 hover:bg-white hover:text-ink">{doc.kind === "website" ? "Photos" : "Photo"}</button>
+              {doc.kind === "website" && <button onClick={() => setPicker(picker === "sections" ? null : "sections")} className="shrink-0 rounded-full border border-line-strong bg-white/50 px-3.5 py-1.5 text-[13px] text-ink-soft transition hover:border-wine/40 hover:bg-white hover:text-ink">Sections</button>}
+              {doc.kind !== "website" && <button onClick={() => download()} className="shrink-0 rounded-full border border-line-strong bg-white/50 px-3.5 py-1.5 text-[13px] text-ink-soft transition hover:border-wine/40 hover:bg-white hover:text-ink">↓ PNG</button>}
+              {(doc.kind === "greeting" || occ === "greeting") && <button onClick={() => download(true)} className="shrink-0 rounded-full border border-line-strong bg-white/50 px-3.5 py-1.5 text-[13px] text-ink-soft transition hover:border-wine/40 hover:bg-white hover:text-ink">Share</button>}
+              {doc.kind !== "website" && <a href={`/studio/${wedding.id}/print/${doc.id}`} target="_blank" className="shrink-0 rounded-full border border-line-strong bg-white/50 px-3.5 py-1.5 text-[13px] text-ink-soft transition hover:border-wine/40 hover:bg-white hover:text-ink">Print / PDF</a>}
               {docs.length > 1 && <button onClick={removeDoc} className="shrink-0 rounded-full px-3 py-1.5 text-[13px] text-muted hover:text-rose">Remove</button>}
               {/* suite colours */}
               <div className="flex shrink-0 items-center gap-1.5 pl-1" title="Design world for the whole suite">
@@ -481,7 +547,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
           ) : (
             <div className="scroll-soft relative z-10 flex flex-1 overflow-y-auto p-5 md:p-6">{Canvas}</div>
           )}
-          <p className="relative z-10 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center font-display text-sm italic text-muted">{doc && KINDS[doc.kind].name} · {theme.name} — {theme.mood}</p>
+          <p className="relative z-10 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center font-display text-sm italic text-muted">{!named && editable ? "Tell me your names — your design will bloom as we talk ✦" : <>{doc && KINDS[doc.kind].name} · {theme.name} — {theme.mood}</>}</p>
         </section>
       </div>
 

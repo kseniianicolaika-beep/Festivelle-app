@@ -1,0 +1,19 @@
+/* Mogra Bloom */
+.mog-kasavu { display: flex; flex-direction: column; gap: var(--kg, 3px); }
+.mog-kasavu i, .mog-kasavu b { display: block; background:
+  repeating-linear-gradient(90deg, rgba(255,255,255,.28) 0 1px, transparent 1px 3px),
+  linear-gradient(90deg, #a98a4c, #e9d49c 18%, #b7975a 36%, #f4e3b4 55%, #a98a4c 74%, #e2c98e 90%, #a98a4c); }
+.mog-kasavu i { height: var(--kt, 1.5px); }
+.mog-kasavu b { height: var(--kb, 9px); }
+.mog-kasavu-thin { --kb: 4px; --kt: 1px; --kg: 2px; }
+.mog-italic { font-style: italic; }
+:lang(hi) .mog-italic { font-style: normal; }
+.mog .wa-ch { display: inline-block; }
+.mog-mote { position: absolute; width: 4px; height: 4px; border-radius: 99px; background: radial-gradient(#fffbe8, rgba(255,250,220,0)); box-shadow: 0 0 8px 2px rgba(255, 246, 210, .7); animation: mog-mote var(--d, 14s) linear var(--dl, 0s) infinite; opacity: 0; }
+@keyframes mog-mote { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: .9; } 85% { opacity: .6; } 100% { transform: translate(var(--x, 30px), -260px); opacity: 0; } }
+.mog-link { background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat; padding-bottom: 4px; transition: background-size .5s; }
+.mog-link:hover { background-size: 0 1px; background-position: 100% 100%; }
+.mog-rsvp { background: #fffefa; box-shadow: 0 50px 90px -60px rgba(60, 60, 40, .45), 0 0 0 1px rgba(181, 162, 122, .35); }
+.mog { font-variant-numeric: lining-nums; }
+.mog:lang(hi) *, .mog:lang(hi) { letter-spacing: 0 !important; }
+.mog:lang(hi) .uppercase { font-weight: 500; }

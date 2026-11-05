@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { BRAND } from "@/lib/brand";
 import type { Workspace } from "@/lib/workspace";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
-import { Heart } from "@/components/fx/Heart";
+import { Wordmark } from "@/components/brand/Wordmark";
 import { SignOut } from "./SignOut";
 
 const TABS = [
@@ -13,24 +12,27 @@ const TABS = [
   { id: "partners", href: "/partners", label: "Vendors" },
 ] as const;
 
+// The studio's quiet masthead: wordmark + workspace on the left, a hairline tab rail, account on the right.
 export function StudioNav({ current, list, email, admin, active }: { current: Workspace; list: Workspace[]; email: string; admin: boolean; active: (typeof TABS)[number]["id"] }) {
   return (
-    <nav className="relative z-30 mx-auto max-w-6xl px-5 pt-5 md:px-6">
+    <nav className="relative z-30 mx-auto max-w-[1320px] px-5 pt-5 md:px-10">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link href="/studio" className="display hidden items-center gap-2 text-2xl sm:flex"><Heart className="heartbeat h-3.5 w-3.5" color="var(--rose)" />{BRAND.name}</Link>
+        <div className="flex min-w-0 items-center gap-4">
+          <Link href="/studio" className="hidden shrink-0 sm:block" aria-label="Studio home"><Wordmark size="text-[1.6rem]" /></Link>
+          <span className="hidden h-6 w-px bg-line-strong sm:block" />
           <WorkspaceSwitcher current={current} list={list} />
         </div>
-        <div className="flex items-center gap-3 text-sm text-muted">
-          {admin && <Link href="/admin" className="rounded-full bg-wine px-3 py-1.5 text-[11px] tracking-widest text-[#fbeee6]">ADMIN</Link>}
-          <span className="hidden lg:inline">{email}</span>
+        <div className="flex items-center gap-3 text-[13px] text-muted">
+          {admin && <Link href="/admin" className="rounded-full border border-wine/30 px-3 py-1 text-[10px] tracking-[.24em] text-wine transition hover:bg-wine hover:text-[#fbeee6]">ADMIN</Link>}
+          <span className="hidden max-w-[220px] truncate lg:inline">{email}</span>
           <SignOut />
         </div>
       </div>
-      <div className="mt-5 flex gap-1 overflow-x-auto">
+      <div className="scroll-hide mt-5 flex gap-7 overflow-x-auto border-b border-line-strong">
         {TABS.map((t) => (
-          <Link key={t.id} href={t.href} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition ${active === t.id ? "bg-wine text-[#fbeee6] shadow-md" : "text-muted hover:bg-white/60 hover:text-ink"}`}>
+          <Link key={t.id} href={t.href} className={`relative whitespace-nowrap pb-3 text-[13.5px] transition ${active === t.id ? "text-ink" : "text-muted hover:text-ink"}`}>
             {t.label}
+            {active === t.id && <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-wine" />}
           </Link>
         ))}
       </div>

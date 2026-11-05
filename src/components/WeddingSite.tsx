@@ -8,6 +8,7 @@ import { SITE_BODY, SITE_DEFAULT_ORDER, SITE_HEROES } from "./site/heroes";
 import { nameParts, occasionInvite, occasionLine, occasionOf } from "@/lib/occasions";
 import { sectionLayout, type Design, type SectionId } from "@/lib/templates";
 import { Motif } from "./Motif";
+import { bespokeFor } from "@/templates/registry";
 import { Countdown } from "./Countdown";
 import { Petals } from "./fx/Petals";
 import { Reveal } from "./fx/Reveal";
@@ -30,7 +31,14 @@ type Props = {
   design?: Design;
 };
 
-export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, compact, layout = "romance", motif, credit, design }: Props) {
+export function WeddingSite(props: Props) {
+  // Bespoke, hand-composed templates (src/templates/**) take over when the piece came from one.
+  const B = bespokeFor(props.design?.template);
+  if (B) return <B.site {...props} />;
+  return <GenericSite {...props} />;
+}
+
+function GenericSite({ profile, theme, heroUrl, calendarUrl, children, compact, layout = "romance", motif, credit, design }: Props) {
   const [a, b] = nameParts(profile);
   const L = t(profile.language);
   const pad = compact ? "px-6" : "px-6 md:px-12";

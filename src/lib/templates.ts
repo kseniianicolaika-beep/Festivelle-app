@@ -120,6 +120,31 @@ export function templatesFor(kind: Kind, occasion: string = "wedding"): T[] {
 export function defaultDesign(kind: Kind, p: Profile): Design {
   const ru = p.language === "ru";
   const hi = p.language === "hi";
+  // Non-wedding celebrations get party wording, never wedding defaults.
+  const occ = p.occasion ?? "wedding";
+  if (occ !== "wedding" && occ !== "engagement") {
+    const first = (p.partner1 ?? "").split(" ")[0] || "Us";
+    switch (kind) {
+      case "menu":
+        return {
+          texts: { headline: ru ? "Меню" : hi ? "भोजन" : "Menu" },
+          items: ru
+            ? [{ title: "Закуски", detail: "Канапе · Самоса · Фрукты" }, { title: "Горячее", detail: "Паста · Бирьяни · Мини-бургеры" }, { title: "Сладкое", detail: "Праздничный торт · Капкейки" }]
+            : [{ title: "Little bites", detail: "Samosas · Sliders · Fruit skewers" }, { title: "The feast", detail: "Biryani · Pasta · Grilled paneer" }, { title: "Something sweet", detail: "The cake · Cupcakes · Ice cream" }],
+        };
+      case "program":
+        return {
+          texts: { headline: ru ? "Программа" : hi ? "कार्यक्रम" : "The plan" },
+          items: ru
+            ? [{ title: "Встреча гостей" }, { title: "Игры и сюрпризы" }, { title: "Торт и свечи" }, { title: "Танцы" }]
+            : [{ title: "Welcome", detail: "Drinks & hellos" }, { title: "Games & surprises" }, { title: "Cake & candles" }, { title: "Dancing" }],
+        };
+      case "hashtag":
+        return { texts: { hashtag: `#${first}${occ === "birthday" || occ === "kids" ? "Turns" + (p.age ?? "") : occ === "baby_shower" ? "BabyShower" : occ === "anniversary" ? "Forever" : "Celebrates"}`, body: ru ? "Делитесь снимками с нашим хэштегом" : "Share your moments with us" } };
+      case "thankyou":
+        return { texts: { headline: ru ? "Спасибо" : hi ? "धन्यवाद" : "Thank you", body: ru ? "за то, что разделили с нами этот праздник" : hi ? "हमारे साथ यह खुशी मनाने के लिए" : "for celebrating with us — it meant the world" } };
+    }
+  }
   switch (kind) {
     case "menu":
       return {

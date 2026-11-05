@@ -3,18 +3,22 @@ import Link from "next/link";
 import { currentUser } from "@/lib/auth/server";
 import { getPricing, fmt, currencyFor, TIERS } from "@/lib/pricing";
 import { OCCASIONS, OCCASION_IDS } from "@/lib/occasions";
-import { themeById } from "@/lib/themes";
-import { featuredTemplates, activeCollections } from "@/lib/template-admin";
+import { featuredTemplates, activeCollections, publicCatalog } from "@/lib/template-admin";
+import { templateById, type TemplateDef } from "@/lib/catalog";
+import { bespokeFor } from "@/templates/registry";
 import { sql } from "@/lib/db";
 import { BRAND } from "@/lib/brand";
-import { Paper } from "@/components/designs/Paper";
 import { Aurora } from "@/components/fx/Aurora";
+import { Wash } from "@/components/fx/Wash";
 import { Petals } from "@/components/fx/Petals";
 import { Reveal } from "@/components/fx/Reveal";
 import { SiteNav, SiteFooter } from "@/components/marketing/SiteNav";
-import { TemplateGrid } from "@/components/marketing/TemplateGrid";
-import { TalkDemo } from "@/components/marketing/TalkDemo";
 import { COPY, DEMO, type Lang } from "@/components/marketing/copy";
+import { SmoothScroll } from "@/components/marketing/landing/SmoothScroll";
+import { HeroStage } from "@/components/marketing/landing/HeroStage";
+import { ScrollStory } from "@/components/marketing/landing/ScrollStory";
+import { PosterWall } from "@/components/marketing/landing/PosterWall";
+import { OccasionIndex } from "@/components/marketing/landing/OccasionIndex";
 
 export const metadata: Metadata = {
   title: `${BRAND.name} — invitations & celebration websites, designed by conversation`,
@@ -22,136 +26,186 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+const HERO = ["maharani", "neva-monogram", "ashwem-dusk", "lotus-vows", "noor-nikah", "gatsby-vows"];
+const MARQUEE = ["Wedding", "Свадьба", "विवाह", "Engagement", "Помолвка", "सगाई", "Anniversary", "Годовщина", "Birthday", "День рождения", "जन्मदिन", "Baby shower", "गोदभराई", "Greetings", "Открытки"];
+
 export default async function Home({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
   const q = await searchParams;
   const lang: Lang = q.lang === "ru" || q.lang === "hi" ? q.lang : "en";
   const L = COPY[lang];
-  const [user, P, featured, collections, partners] = await Promise.all([
+  const [user, P, featured, collections, all, partners] = await Promise.all([
     currentUser().catch(() => null),
     getPricing(),
     featuredTemplates(8),
     activeCollections(),
-    sql`SELECT name, category, city FROM partners WHERE active ORDER BY CASE listing WHEN 'sponsored' THEN 0 WHEN 'featured' THEN 1 ELSE 2 END, name LIMIT 8`.catch(() => []) as Promise<{ name: string; category: string; city: string | null }[]>,
+    publicCatalog(),
+    sql`SELECT name, category, city FROM partners WHERE active ORDER BY CASE listing WHEN 'sponsored' THEN 0 WHEN 'featured' THEN 1 ELSE 2 END, name LIMIT 12`.catch(() => []) as Promise<{ name: string; category: string; city: string | null }[]>,
   ]);
   const cur = lang === "ru" ? "RUB" : lang === "hi" ? "INR" : currencyFor(null);
-  const hero = themeById("konkan-sunset");
+  // Prefer hand-composed (bespoke) templates on the stage; fall back gracefully while they're being finished.
+  const heroAll = HERO.map(templateById).filter((t): t is TemplateDef => !!t);
+  const heroBespoke = heroAll.filter((t) => bespokeFor(t.id));
+  const hero = (heroBespoke.length >= 2 ? heroBespoke : heroAll).slice(0, 4);
+  const occRows = OCCASION_IDS.map((o) => {
+    const list = all.filter((t) => t.occasion === o);
+    const t = list.find((x) => bespokeFor(x.id)) ?? list[0];
+    return t ? { id: o, name: L.occ[o] ?? OCCASIONS[o].name, blurb: OCCASIONS[o].blurb, count: list.length, t } : null;
+  }).filter((r): r is NonNullable<typeof r> => !!r);
+  const words = L.h1a.split(/\s+/);
 
   return (
-    <main lang={lang} className="grain relative min-h-dvh overflow-hidden">
-      <Aurora />
-      <Petals count={12} />
-      <SiteNav signedIn={!!user} cta={L.cta} />
-      <div className="relative z-10 mx-auto -mt-2 flex max-w-6xl justify-end gap-1 px-5 text-xs md:px-6">
-        {(["en", "ru", "hi"] as Lang[]).map((l) => <Link key={l} href={l === "en" ? "/" : `/?lang=${l}`} className={`rounded-full px-2.5 py-1 ${l === lang ? "bg-wine text-[#fbeee6]" : "text-muted hover:text-ink"}`}>{l === "en" ? "EN" : l === "ru" ? "RU" : "हि"}</Link>)}
+    <main lang={lang} className="relative min-h-dvh overflow-x-clip">
+      <SmoothScroll />
+      <SiteNav signedIn={!!user} cta={L.cta} lang={lang} />
+
+      {/* ── Hero ── */}
+      <section className="relative -mt-[76px] min-h-[100svh] overflow-hidden pt-[96px]">
+        <Wash />
+        <Petals count={9} className="absolute" />
+        <div className="relative z-10 mx-auto grid max-w-[1320px] items-center gap-10 px-5 pb-16 md:px-10 lg:min-h-[calc(100svh-96px)] lg:grid-cols-[1.12fr_1fr] lg:gap-6">
+          <div>
+            <p className="kicker fade-up text-rose" style={{ ["--d" as string]: "100ms" }}>{L.eyebrow}</p>
+            <h1 className="t-hero mt-7">
+              {words.map((w, i) => <span key={i}><span className="wm"><span style={{ ["--i" as string]: i }}>{w}</span></span> </span>)}
+              <span className="wm"><span style={{ ["--i" as string]: words.length }}><em className="text-rose">{L.h1b}</em></span></span>
+            </h1>
+            <p className="t-lede fade-up mt-8 max-w-[34rem]" style={{ ["--d" as string]: "700ms" }}>{L.sub}</p>
+            <div className="fade-up mt-10 flex flex-wrap items-center gap-3" style={{ ["--d" as string]: "900ms" }}>
+              <Link href="/studio/new" className="btn btn-dark !px-7 !py-4">{L.cta}<span className="btn-arrow">→</span></Link>
+              <Link href="/templates" className="btn btn-ghost !px-7 !py-4">{L.browse}</Link>
+            </div>
+            <p className="fade-up mt-6 text-xs tracking-wide text-muted" style={{ ["--d" as string]: "1100ms" }}>{L.trust}</p>
+          </div>
+          <div className="fade-up" style={{ ["--d" as string]: "300ms" }}>
+            <HeroStage list={hero} label={L.nowPlaying} />
+          </div>
+        </div>
+        <div aria-hidden className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-[10px] uppercase tracking-[.3em] text-muted lg:flex">
+          {L.scroll}<span className="h-10 w-px overflow-hidden bg-line"><span className="block h-1/2 w-px animate-[drift_2.4s_ease-in-out_infinite] bg-wine/60" /></span>
+        </div>
+      </section>
+
+      {/* ── Marquee ── */}
+      <div className="marquee-wrap relative z-10 overflow-hidden border-y border-line-strong bg-cream/60 py-5">
+        <div className="marquee">
+          {[0, 1].map((k) => (
+            <div key={k} className="flex shrink-0 items-center" aria-hidden={k === 1}>
+              {MARQUEE.map((w, i) => <span key={i} className="flex items-center whitespace-nowrap px-6 font-display text-3xl italic text-ink/80 md:text-4xl">{w}<span className="ml-12 text-base not-italic text-gold">✦</span></span>)}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Hero */}
-      <section className="relative z-10 mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-8 md:grid-cols-[1.15fr_1fr] md:px-6 md:pt-14">
+      {/* ── Talk → it designs itself ── */}
+      <section className="relative z-10 mx-auto max-w-[1320px] px-5 pt-24 md:px-10 md:pt-36">
         <Reveal>
-          <p className="eyebrow text-rose">{L.eyebrow}</p>
-          <h1 className="display mt-4 text-[3.2rem] leading-[0.98] md:text-[5.6rem]">{L.h1a} <em className="text-rose">{L.h1b}</em></h1>
-          <p className="mt-6 max-w-lg text-lg text-muted">{L.sub}</p>
-          <div className="mt-9 flex flex-wrap items-center gap-4">
-            <Link href={user ? "/studio/new" : "/studio/new"} className="btn btn-dark">{L.cta}</Link>
-            <Link href="/templates" className="btn btn-ghost">{L.browse}</Link>
-          </div>
-          <p className="mt-5 text-xs text-muted">{L.trust}</p>
+          <p className="kicker text-rose">{L.demoEyebrow}</p>
+          <h2 className="t-h1 mt-5 max-w-4xl">{L.demoH}</h2>
         </Reveal>
-        <Reveal delay={0.15}>
-          <div className="relative mx-auto w-full max-w-[380px] [perspective:1400px]">
-            <div className="absolute -inset-10 rounded-full bg-[radial-gradient(closest-side,rgba(233,186,160,.55),transparent)] blur-2xl" />
-            <div className="relative rotate-[-3deg] transition duration-700 hover:rotate-0">
-              <Paper kind="invite" layout="arch" design={{ motif: "palms" }} profile={{ occasion: "wedding", partner1: lang === "ru" ? "Анна" : "Anya", partner2: lang === "ru" ? "Рохан" : "Rohan", date: "2027-02-14", venue: "Ashwem Beach", city: "Goa", language: lang }} theme={hero} className="shadow-[0_60px_100px_-40px_rgba(74,20,36,.75)]" />
-            </div>
-            <div className="absolute -bottom-6 -left-8 hidden w-36 rotate-[8deg] md:block">
-              <Paper kind="save" layout="monogram" design={{ motif: "rings" }} profile={{ occasion: "wedding", partner1: "Anya", partner2: "Rohan", date: "2027-02-14", city: "Goa", language: lang }} theme={themeById("belaya-noch")} animate={false} className="shadow-xl" />
-            </div>
-          </div>
-        </Reveal>
+        <ScrollStory script={DEMO[lang]} chapters={L.chapters} labels={{ you: L.you, ai: BRAND.name, blank: L.blank }} />
       </section>
 
-      {/* Talk demo */}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 py-20 md:px-6">
-        <Reveal><p className="eyebrow text-rose">{L.demoEyebrow}</p><h2 className="display mt-3 max-w-2xl text-4xl md:text-6xl">{L.demoH}</h2></Reveal>
-        <div className="mt-10"><TalkDemo script={DEMO[lang]} labels={{ you: L.you, ai: BRAND.name }} /></div>
-      </section>
-
-      {/* Occasions */}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 py-20 md:px-6">
-        <Reveal><h2 className="display text-4xl md:text-6xl">{L.occH}</h2></Reveal>
-        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {OCCASION_IDS.map((o, i) => {
-            const occ = OCCASIONS[o];
-            const th = themeById(occ.theme);
-            return (
-              <Reveal key={o} delay={i * 0.05}>
-                <Link href={`/templates?occasion=${o}`} className="group block h-full overflow-hidden rounded-[24px] p-5 transition duration-700 hover:-translate-y-1.5 hover:shadow-[0_40px_70px_-40px_rgba(74,20,36,.7)]" style={{ background: th.bg, color: th.ink }}>
-                  <p className="display text-2xl">{L.occ[o] ?? occ.name}</p>
-                  <p className="mt-2 text-xs opacity-70">{occ.blurb}</p>
-                  <span className="mt-4 inline-block text-sm transition group-hover:translate-x-1" style={{ color: th.accent }}>→</span>
-                </Link>
-              </Reveal>
-            );
-          })}
+      {/* ── The wall ── */}
+      <section className="relative z-10 mx-auto max-w-[1320px] px-5 py-24 md:px-10 md:py-36">
+        <div className="grid items-end gap-8 md:grid-cols-[1.4fr_1fr]">
+          <Reveal>
+            <p className="kicker text-rose">{L.featH}</p>
+            <h2 className="t-h1 mt-5">{L.wallH}</h2>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <p className="t-lede">{L.wallSub}</p>
+            <Link href="/templates" className="link-u mt-5 inline-block text-sm text-wine">{L.all} →</Link>
+          </Reveal>
         </div>
+        <div className="mt-16 md:mt-24"><PosterWall list={featured} /></div>
       </section>
 
-      {/* Featured templates & collections */}
       {collections.map((c) => (
-        <section key={c.id} className="relative z-10 mx-auto max-w-6xl px-5 py-14 md:px-6">
-          <Reveal><p className="eyebrow text-rose">{L.collection}</p><h2 className="display mt-2 text-4xl">{c.name}</h2>{c.blurb && <p className="mt-2 text-muted">{c.blurb}</p>}</Reveal>
-          <div className="mt-8"><TemplateGrid list={c.templates.slice(0, 8)} /></div>
+        <section key={c.id} className="relative z-10 mx-auto max-w-[1320px] px-5 pb-24 md:px-10">
+          <Reveal><p className="kicker text-rose">{L.collection}</p><h2 className="t-h2 mt-4">{c.name}</h2>{c.blurb && <p className="t-lede mt-3 max-w-xl">{c.blurb}</p>}</Reveal>
+          <div className="mt-12"><PosterWall list={c.templates.slice(0, 8)} cols="grid" /></div>
         </section>
       ))}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 py-20 md:px-6">
-        <div className="flex items-end justify-between gap-4">
-          <Reveal><h2 className="display text-4xl md:text-6xl">{L.featH}</h2></Reveal>
-          <Link href="/templates" className="whitespace-nowrap text-sm text-rose">{L.all} →</Link>
-        </div>
-        <div className="mt-10"><TemplateGrid list={featured} /></div>
+
+      {/* ── Occasions ── */}
+      <section className="relative z-10 mx-auto max-w-[1320px] px-5 pb-24 md:px-10 md:pb-36">
+        <Reveal>
+          <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
+            <h2 className="t-h1">{L.occH}</h2>
+            <p className="t-lede max-w-sm">{L.occSub}</p>
+          </div>
+        </Reveal>
+        <OccasionIndex rows={occRows} designs={L.designs} />
       </section>
 
-      {/* Pricing teaser */}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 py-20 md:px-6">
-        <Reveal><p className="eyebrow text-rose">{L.priceEyebrow}</p><h2 className="display mt-3 text-4xl md:text-6xl">{L.priceH}</h2><p className="mt-4 max-w-xl text-muted">{L.priceSub}</p></Reveal>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {TIERS.map((t, i) => {
-            const pk = P.packages.wedding[t];
-            return (
-              <Reveal key={t} delay={i * 0.07}>
-                <div className={`h-full rounded-[28px] p-7 ${t === "premium" ? "bg-wine text-[#fbeee6] shadow-[0_40px_80px_-40px_rgba(74,20,36,.8)]" : "glass"}`}>
-                  <p className="display text-3xl">{pk.name}</p>
-                  <p className="display mt-3 text-5xl">{fmt(pk.price[cur], cur)}</p>
-                  <ul className="mt-5 space-y-1.5 text-sm opacity-90">{pk.features.slice(0, 3).map((f) => <li key={f}>♡ {f}</li>)}</ul>
-                </div>
-              </Reveal>
-            );
-          })}
+      {/* ── Pricing (noir chapter) ── */}
+      <section className="noir relative z-10 overflow-hidden px-5 py-28 md:px-10 md:py-40">
+        <Petals count={8} colors={["#c5a06a", "#e8a3ab", "#f1dcb3"]} className="absolute opacity-60" />
+        <div className="relative mx-auto max-w-[1320px]">
+          <Reveal>
+            <p className="kicker text-[#c5a06a]">{L.priceEyebrow}</p>
+            <h2 className="t-h1 mt-5 max-w-3xl">{L.priceH}</h2>
+            <p className="t-lede mt-6 max-w-xl !text-[#f6ece2]/70">{L.priceSub}</p>
+          </Reveal>
+          <div className="mt-16 grid gap-px overflow-hidden rounded-[28px] bg-white/10 md:grid-cols-3">
+            {TIERS.map((t, i) => {
+              const pk = P.packages.wedding[t];
+              return (
+                <Reveal key={t} delay={i * 0.08} className="h-full">
+                  <div className={`flex h-full flex-col p-8 md:p-10 ${t === "premium" ? "bg-[#2e1520]" : "bg-[#1f0f16]"}`}>
+                    <p className="flex items-center justify-between"><span className="num text-lg text-[#c5a06a]">0{i + 1}</span>{t === "premium" && <span className="text-[10px] uppercase tracking-[.3em] text-[#e8a3ab]">most loved</span>}</p>
+                    <p className="t-h3 mt-8">{pk.name}</p>
+                    <p className="display foil mt-3 text-6xl" style={{ ["--foil-a" as string]: "#b88c4f", ["--foil-b" as string]: "#f6dfae" }}>{fmt(pk.price[cur], cur)}</p>
+                    <ul className="mt-8 space-y-2.5 text-sm text-[#f6ece2]/75">{pk.features.slice(0, 4).map((f) => <li key={f} className="flex gap-3"><span className="text-[#c5a06a]">✦</span>{f}</li>)}</ul>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+          <p className="mt-8 text-sm text-[#f6ece2]/60">{L.priceMore} <Link href="/pricing" className="link-u text-[#f1dcb3]">{L.seePricing}</Link> · {L.from} {fmt(P.packages.celebration.basic.price[cur], cur)}</p>
         </div>
-        <p className="mt-6 text-sm text-muted">{L.priceMore} <Link href="/pricing" className="text-rose underline-offset-4 hover:underline">{L.seePricing}</Link> · {L.from} {fmt(P.packages.celebration.basic.price[cur], cur)}</p>
       </section>
 
-      {/* Partners */}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 py-20 md:px-6">
-        <div className="glass rounded-[32px] p-8 md:p-12">
-          <Reveal><p className="eyebrow text-rose">{L.partnersEyebrow}</p><h2 className="display mt-3 text-4xl md:text-5xl">{L.partnersH}</h2><p className="mt-3 max-w-xl text-muted">{L.partnersSub}</p></Reveal>
-          {partners.length > 0 && <div className="mt-8 flex flex-wrap gap-2">{partners.map((p) => <span key={p.name} className="rounded-full bg-white/70 px-4 py-2 text-sm"><span className="font-display text-lg">{p.name}</span> <span className="text-muted">· {p.category}{p.city ? `, ${p.city}` : ""}</span></span>)}</div>}
-          <Link href="/partners" className="btn btn-ghost mt-8">{L.partnersCta}</Link>
+      {/* ── Partners ── */}
+      <section className="relative z-10 mx-auto max-w-[1320px] px-5 py-24 md:px-10 md:py-32">
+        <div className="grid gap-10 md:grid-cols-[1fr_1.2fr] md:items-end">
+          <Reveal><p className="kicker text-rose">{L.partnersEyebrow}</p><h2 className="t-h2 mt-5">{L.partnersH}</h2></Reveal>
+          <Reveal delay={0.1}><p className="t-lede">{L.partnersSub}</p><Link href="/partners" className="btn btn-ghost mt-6">{L.partnersCta}<span className="btn-arrow">→</span></Link></Reveal>
         </div>
+        {partners.length > 0 && (
+          <div className="marquee-wrap mt-14 overflow-hidden border-y border-line py-6 [--marquee-dur:60s]">
+            <div className="marquee">
+              {[0, 1].map((k) => <div key={k} className="flex shrink-0" aria-hidden={k === 1}>{partners.map((p) => <span key={p.name} className="whitespace-nowrap px-8"><span className="font-display text-2xl">{p.name}</span> <span className="text-sm text-muted">· {p.category}{p.city ? `, ${p.city}` : ""}</span></span>)}</div>)}
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* FAQ */}
-      <section className="relative z-10 mx-auto max-w-3xl px-5 py-20 md:px-6">
-        <Reveal><h2 className="display text-4xl md:text-5xl">{L.faqH}</h2></Reveal>
-        <div className="mt-8 divide-y divide-line">
-          {L.faq(P.hosting.maxMonths, P.hosting.afterEventDays).map(([qq, a]) => (
-            <details key={qq} className="group py-5"><summary className="cursor-pointer list-none font-display text-xl md:text-2xl">{qq}<span className="float-right text-rose transition group-open:rotate-45">+</span></summary><p className="mt-3 text-muted">{a}</p></details>
+      {/* ── FAQ ── */}
+      <section className="relative z-10 mx-auto grid max-w-[1320px] gap-10 px-5 pb-28 md:grid-cols-[1fr_1.5fr] md:px-10 md:pb-40">
+        <Reveal><h2 className="t-h1 md:sticky md:top-28">{L.faqH}</h2></Reveal>
+        <div className="border-t border-line-strong">
+          {L.faq(P.hosting.maxMonths, P.hosting.afterEventDays).map(([qq, a], i) => (
+            <details key={qq} className="group border-b border-line-strong py-7">
+              <summary className="flex cursor-pointer list-none items-baseline gap-5 [&::-webkit-details-marker]:hidden">
+                <span className="num text-base text-muted">{String(i + 1).padStart(2, "0")}</span>
+                <span className="t-h3 flex-1 !text-[clamp(1.35rem,1.1rem+1vw,2rem)]">{qq}</span>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line-strong text-rose transition duration-500 group-open:rotate-45 group-open:bg-wine group-open:text-white">+</span>
+              </summary>
+              <p className="mt-4 max-w-xl pl-10 leading-relaxed text-ink-soft">{a}</p>
+            </details>
           ))}
         </div>
       </section>
 
-      <section className="relative z-10 px-5 py-24 text-center">
-        <Reveal><p className="script text-4xl text-rose">{L.endScript}</p><h2 className="display mx-auto mt-3 max-w-3xl text-5xl md:text-7xl">{L.endH}</h2><Link href="/studio/new" className="btn btn-dark mt-10">{L.cta}</Link></Reveal>
+      {/* ── Final ── */}
+      <section className="relative z-10 overflow-hidden px-5 pb-32 pt-10 text-center md:pb-44">
+        <Aurora colors={["#f3c9cf", "#f6dfc4", "#efd3e2", "#fbe7dc"]} />
+        <Reveal>
+          <p className="script text-5xl text-rose md:text-6xl">{L.endScript}</p>
+          <h2 className="t-h1 mx-auto mt-6 max-w-4xl">{L.endH}</h2>
+          <Link href="/studio/new" className="btn btn-dark mt-12 !px-8 !py-4">{L.cta}<span className="btn-arrow">→</span></Link>
+        </Reveal>
       </section>
       <SiteFooter />
     </main>

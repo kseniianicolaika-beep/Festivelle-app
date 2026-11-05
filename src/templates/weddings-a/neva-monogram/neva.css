@@ -1,0 +1,6 @@
+/* Neva Monogram */
+.neva-silver { --wa-f1: #66737f; --wa-f2: #f5f8fb; --wa-f3: #a3b0bd; }
+.neva-ivory { background-color: var(--t-bg); background-image: radial-gradient(120% 60% at 50% 0%, #fff, transparent 70%); }
+.neva-frame { box-shadow: 0 0 0 1px #b8c2cc, 0 0 0 6px var(--t-surface), 0 0 0 7px #d5dce3; }
+.neva .wa-ch { display: inline-block; }
+.neva-mono text { paint-order: stroke; }

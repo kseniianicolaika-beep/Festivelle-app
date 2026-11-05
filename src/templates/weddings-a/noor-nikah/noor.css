@@ -1,0 +1,17 @@
+/* Noor — jaali doors, brass lanterns, pierced light */
+.noor-door { position: absolute; top: 0; bottom: 0; width: 50%; will-change: transform; backface-visibility: hidden; }
+.noor-door-l { left: 0; transform-origin: left center; transform: perspective(1400px) rotateY(-80deg); }
+.noor-door-r { right: 0; transform-origin: right center; transform: perspective(1400px) rotateY(80deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .wa-pre .noor-door-l { transform: perspective(1400px) rotateY(0deg); animation: noor-open-l 2.2s cubic-bezier(.6,0,.2,1) 3.4s forwards; }
+  .wa-pre .noor-door-r { transform: perspective(1400px) rotateY(0deg); animation: noor-open-r 2.2s cubic-bezier(.6,0,.2,1) 3.4s forwards; }
+}
+@keyframes noor-open-l { to { transform: perspective(1400px) rotateY(-80deg); } }
+@keyframes noor-open-r { to { transform: perspective(1400px) rotateY(80deg); } }
+@keyframes noor-swing { 0%, 100% { transform: rotate(-2.4deg); } 50% { transform: rotate(2.4deg); } }
+.noor-names { filter: drop-shadow(0 2px 14px rgba(0, 20, 14, .7)); }
+.noor-glow { filter: drop-shadow(0 0 50px rgba(255, 200, 110, .22)) drop-shadow(0 40px 60px rgba(0,0,0,.5)); }
+.noor-panel { background: radial-gradient(120% 90% at 50% 0%, #fbf5e6, #efe3c6); color: #0f2e28; box-shadow: 0 50px 90px -40px rgba(0,0,0,.75), 0 0 0 1px #d4af37, 0 0 0 6px #fbf5e6, 0 0 0 7px #a8862a; }
+.noor-panel::before { content: ""; position: absolute; inset: 12px; border: 1px solid rgba(168, 134, 42, .45); pointer-events: none; }
+.noor-spin { animation: noor-spin 160s linear infinite; transform-origin: center; }
+@keyframes noor-spin { to { transform: rotate(360deg); } }

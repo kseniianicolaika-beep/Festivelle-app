@@ -7,6 +7,7 @@ type Copy = {
   demoEyebrow: string; demoH: string; occH: string; occ: Partial<Record<string, string>>; collection: string; featH: string; all: string;
   priceEyebrow: string; priceH: string; priceSub: string; priceMore: string; seePricing: string; from: string;
   partnersEyebrow: string; partnersH: string; partnersSub: string; partnersCta: string; faqH: string; faq: Faq; endScript: string; endH: string;
+  nowPlaying: string; scroll: string; blank: string; chapters: [string, string][]; wallH: string; wallSub: string; occSub: string; designs: string;
 };
 
 export const COPY: Record<Lang, Copy> = {
@@ -46,6 +47,19 @@ export const COPY: Record<Lang, Copy> = {
     ],
     endScript: "and so it begins",
     endH: "Your celebration deserves to be beautiful from the very first hello.",
+    nowPlaying: "Now playing",
+    scroll: "Scroll",
+    blank: "Your names, here",
+    chapters: [
+      ["You talk.", "No forms, no fiddly editors. Just tell us who you are — in English, Русский or हिन्दी."],
+      ["It listens.", "Dates, places, traditions, the little rituals that matter to your families. Every answer becomes design."],
+      ["It designs itself.", "Your invitation, website and cards compose themselves around your story — hand-finished, never generic."],
+      ["You fall in love.", "Ask for anything — “more royal”, “in Russian”, “bigger names” — or simply touch the design and change it."],
+    ],
+    wallH: "Hand-composed, never templated",
+    wallSub: "Every design is a complete suite with its own opening, its own music and its own art — drawn, not downloaded.",
+    occSub: "From the haldi morning to the hundredth birthday.",
+    designs: "designs",
   },
   ru: {
     eyebrow: "Приглашения · сайты · видео · открытки",
@@ -83,6 +97,19 @@ export const COPY: Record<Lang, Copy> = {
     ],
     endScript: "и так начинается",
     endH: "Ваш праздник заслуживает красоты с первого слова.",
+    nowPlaying: "Сейчас играет",
+    scroll: "Листайте",
+    blank: "Здесь будут ваши имена",
+    chapters: [
+      ["Вы говорите.", "Никаких анкет и сложных редакторов. Просто расскажите о себе — по-русски, по-английски или на хинди."],
+      ["Мы слушаем.", "Даты, места, традиции и маленькие ритуалы ваших семей. Каждый ответ становится дизайном."],
+      ["Дизайн рождается сам.", "Приглашение, сайт и карточки складываются вокруг вашей истории — вручную доведённые, без шаблонности."],
+      ["Вы влюбляетесь.", "Попросите что угодно — «роскошнее», «по-русски», «имена крупнее» — или просто нажмите на дизайн и измените."],
+    ],
+    wallH: "Созданы вручную, а не по шаблону",
+    wallSub: "Каждый дизайн — целая коллекция со своим вступлением, своей музыкой и своими иллюстрациями.",
+    occSub: "От утра халди до сотого дня рождения.",
+    designs: "дизайнов",
   },
   hi: {
     eyebrow: "निमंत्रण · वेबसाइट · वीडियो · शुभकामनाएँ",
@@ -120,35 +147,48 @@ export const COPY: Record<Lang, Copy> = {
     ],
     endScript: "यहीं से शुरुआत",
     endH: "आपका उत्सव पहले नमस्ते से ही ख़ूबसूरत होना चाहिए।",
+    nowPlaying: "अभी चल रहा है",
+    scroll: "नीचे देखें",
+    blank: "यहाँ आपके नाम",
+    chapters: [
+      ["आप बात करें।", "न फ़ॉर्म, न उलझे एडिटर। बस बताइए आप कौन हैं — हिन्दी, English या Русский में।"],
+      ["हम सुनते हैं।", "तिथियाँ, जगहें, परंपराएँ और परिवार की छोटी-छोटी रस्में। हर जवाब डिज़ाइन बनता है।"],
+      ["डिज़ाइन ख़ुद बनता है।", "निमंत्रण, वेबसाइट और कार्ड आपकी कहानी के इर्द-गिर्द ख़ुद सजते हैं — हाथ से सँवारे हुए।"],
+      ["आपको प्यार हो जाता है।", "कुछ भी कहिए — “और शाही”, “रूसी में”, “बड़े नाम” — या डिज़ाइन को छूकर बदलिए।"],
+    ],
+    wallH: "हाथ से रचे गए, साँचे में ढले नहीं",
+    wallSub: "हर डिज़ाइन एक पूरा सेट है — अपनी शुरुआत, अपने संगीत और अपनी कला के साथ।",
+    occSub: "हल्दी की सुबह से सौवें जन्मदिन तक।",
+    designs: "डिज़ाइन",
   },
 };
 
 export const DEMO: Record<Lang, DemoScript> = {
   en: [
     { who: "ai", text: "Congratulations! What are your names?" },
-    { who: "you", text: "Anya & Rohan", profile: { partner1: "Anya", partner2: "Rohan" } },
+    { who: "you", text: "Anya & Rohan", profile: { partner1: "Anya", partner2: "Rohan" }, template: "mogra-bloom" },
     { who: "ai", text: "Beautiful. When and where?" },
-    { who: "you", text: "14 Feb 2027, on the beach in Goa", profile: { date: "2027-02-14", venue: "Ashwem Beach", city: "Goa" }, theme: "konkan-sunset", motif: "palms" },
+    { who: "you", text: "14 Feb 2027, on the beach in Goa", profile: { date: "2027-02-14", venue: "Ashwem Beach", city: "Goa" }, theme: "konkan-sunset", motif: "palms", template: "ashwem-dusk" },
     { who: "ai", text: "Golden hour it is. Here’s a first draft ✨" },
-    { who: "you", text: "Make it more royal, with an arch", theme: "rajwada", layout: "arch", motif: "arch" },
+    { who: "you", text: "Make it more royal, with an arch", theme: "rajwada", layout: "arch", motif: "arch", template: "maharani" },
     { who: "ai", text: "Candlelit arches and marigold gold. Better?" },
   ],
   ru: [
     { who: "ai", text: "Поздравляю! Как вас зовут?" },
-    { who: "you", text: "Анна и Рохан", profile: { partner1: "Анна", partner2: "Рохан", language: "ru" } },
+    { who: "you", text: "Анна и Рохан", profile: { partner1: "Анна", partner2: "Рохан", language: "ru" }, template: "mogra-bloom" },
     { who: "ai", text: "Прекрасно. Когда и где?" },
-    { who: "you", text: "14 февраля 2027, Гоа, на пляже", profile: { date: "2027-02-14", venue: "Пляж Ашвем", city: "Гоа" }, theme: "konkan-sunset", motif: "palms" },
+    { who: "you", text: "14 февраля 2027, Гоа, на пляже", profile: { date: "2027-02-14", venue: "Пляж Ашвем", city: "Гоа" }, theme: "konkan-sunset", motif: "palms", template: "ashwem-dusk" },
     { who: "ai", text: "Золотой час на закате — вот первый вариант ✨" },
-    { who: "you", text: "Сделай в стиле Белых ночей", theme: "belaya-noch", layout: "monogram", motif: "birch" },
+    { who: "you", text: "Сделай в стиле Белых ночей", theme: "belaya-noch", layout: "monogram", motif: "birch", template: "neva-monogram" },
     { who: "ai", text: "Серебро, берёзы и петербургский свет. Как вам?" },
   ],
   hi: [
     { who: "ai", text: "बहुत-बहुत बधाई! आपके नाम?" },
-    { who: "you", text: "अन्या और रोहन", profile: { partner1: "अन्या", partner2: "रोहन", language: "hi" } },
+    { who: "you", text: "अन्या और रोहन", profile: { partner1: "अन्या", partner2: "रोहन", language: "hi" }, template: "mogra-bloom" },
     { who: "ai", text: "सुंदर। कब और कहाँ?" },
-    { who: "you", text: "14 फ़रवरी 2027, गोवा", profile: { date: "2027-02-14", venue: "अश्वेम बीच", city: "गोवा" }, theme: "gulmohar", motif: "marigold" },
+    { who: "you", text: "14 फ़रवरी 2027, गोवा", profile: { date: "2027-02-14", venue: "अश्वेम बीच", city: "गोवा" }, theme: "gulmohar", motif: "marigold", template: "haldi-sun" },
     { who: "ai", text: "गेंदे के फूलों के साथ पहला ड्राफ़्ट तैयार ✨" },
-    { who: "you", text: "और शाही बनाइए", theme: "rajwada", layout: "arch", motif: "arch" },
+    { who: "you", text: "और शाही बनाइए", theme: "rajwada", layout: "arch", motif: "arch", template: "maharani" },
     { who: "ai", text: "राजसी मेहराब और सुनहरी रोशनी। कैसा लगा?" },
   ],
 };

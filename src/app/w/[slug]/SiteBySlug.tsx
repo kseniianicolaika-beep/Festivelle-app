@@ -15,6 +15,9 @@ import { GuestGallery } from "./GuestGallery";
 import { GuestAssistant } from "./GuestAssistant";
 import { isExpired } from "@/lib/commerce";
 import { displayNames, occasionOf, OCCASIONS } from "@/lib/occasions";
+import { bespokeFor } from "@/templates/registry";
+import { Music } from "@/templates/_kit/Music";
+import { musicForOccasion } from "@/templates/_kit/music-meta";
 
 function Expired({ names }: { names: string }) {
   return (
@@ -84,6 +87,8 @@ export async function SiteBySlug({ slug, g }: { slug: string; g?: string | null 
         <RsvpForm slug={slug} lang={lang} guest={guest ? { token: guest.token, name: guest.name, email: guest.email, plusOnes: guest.plus_ones } : null} events={visibleEvents.map((e) => e.name)} />
       </WeddingSite>
       {w.published && <GuestGallery slug={slug} canUpload={guestUploads} lang={lang} guestName={guest?.name} />}
+      {/* Generative ambient score — off until a guest taps "♪ Play our song". */}
+      <Music id={bespokeFor(site?.design.template)?.music ?? musicForOccasion(occasionOf(w.profile))} lang={lang} accent={site?.design.palette?.accent ?? theme.accent} ink={site?.design.palette?.ink ?? theme.ink} bg={theme.dark ? "rgba(18,10,12,.55)" : undefined} />
       {w.published && occasionOf(w.profile) !== "greeting" && <GuestAssistant slug={slug} g={guest?.token} lang={lang} />}
     </>
   );

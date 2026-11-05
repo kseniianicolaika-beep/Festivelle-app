@@ -1,0 +1,19 @@
+/* Haldi Sun */
+.haldi { font-variant-numeric: lining-nums; }
+.haldi-d { font-variation-settings: "SOFT" 100, "WONK" 1, "opsz" 144; }
+.haldi-b { font-variation-settings: "SOFT" 100, "WONK" 0, "opsz" 14; }
+.haldi .wa-ch { display: inline-block; }
+@keyframes haldi-spin { to { transform: rotate(360deg); } }
+@keyframes haldi-wobble { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+/* shamiana scallop: the bottom edge of a tent canopy */
+.haldi-scallop { height: 22px; background: radial-gradient(circle at 50% 0, var(--sc) 15px, transparent 16px) 0 0 / 34px 22px repeat-x; }
+.haldi-awning { height: 64px; background: repeating-linear-gradient(90deg, #f7b733 0 34px, #fff4d6 34px 68px); position: relative; }
+.haldi-awning::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 18px; background:
+  radial-gradient(circle at 25% 0, #f7b733 16.5px, transparent 17.5px) 0 0 / 68px 18px repeat-x,
+  radial-gradient(circle at 75% 0, #fff4d6 16.5px, transparent 17.5px) 0 0 / 68px 18px repeat-x; }
+.haldi-tag { background: #fffaf0; box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 24px 40px -26px rgba(120, 50, 0, .45), 0 0 0 1px rgba(210, 120, 30, .2); }
+.haldi-petal { position: absolute; width: 10px; height: 14px; border-radius: 60% 60% 50% 50% / 80% 80% 30% 30%; pointer-events: none; z-index: 30; }
+.haldi-btn { background: var(--t-accent); color: #fff7e8; box-shadow: 0 10px 24px -10px color-mix(in oklab, var(--t-accent) 70%, black); }
+.haldi-btn:hover { transform: translateY(-2px) rotate(-1deg); }
+.haldi-mg { cursor: pointer; }
+.haldi:lang(hi) .tracking-wide, .haldi:lang(hi) [data-caps] { letter-spacing: 0 !important; }

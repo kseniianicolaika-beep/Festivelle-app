@@ -91,28 +91,43 @@ OpenRouter free models, then to the rule-based designer, so the chat never break
 and greetings (3 options). `/api/ai/visual` generates illustrations when `IMAGE_MODEL` is set (image models are not in
 the free plan). Upgrade to Experiential Labs Pro ($20/mo, 10×) when traffic grows.
 
-## Templates (62 complete suites)
+## Templates (64 bespoke, hand-composed suites)
 
-`src/lib/catalog.ts` — every template is a matching suite (website, invitation, save-the-date/event card, story,
-thank-you, video variant), structurally distinct rather than recoloured:
+Every catalog template (`src/lib/catalog.ts`) is now its **own module** in `src/templates/<group>/<id>/` with a
+bespoke `Site.tsx` (the published website) and `Card.tsx` (all 12 paper/social kinds), hand-built SVG artwork, its own
+type system and a signature opening. `src/templates/types.ts` is the contract; `src/templates/registry.ts` maps
+catalog ids → modules; `Paper.tsx` / `WeddingSite.tsx` dispatch to them when `design.template` is set (older pieces
+fall back to the generic layouts).
 
-| Occasion | Count | Cultures / themes |
-|---|---|---|
-| Wedding | 16 | Indian, Russian, Goan Catholic, Muslim, fusion, Western |
-| Engagement | 8 | |
-| Anniversary | 6 | |
-| Birthday | 8 | incl. 30 / 40 / 50 / 60 milestones |
-| Children's party | 8 | |
-| Baby shower | 6 | |
-| Greetings | 10 | Diwali, Eid, Christmas, Russian New Year, Maslenitsa… |
+| Group | Templates |
+|---|---|
+| Weddings (16) | Ashwem Dusk (Goa sunset → night), Lisbon Letter (azulejo, wax seal), Maharani (palace curtain, WebGL gold dust), Neva Monogram (White Nights), Mogra Bloom, Haldi Sun, Noor Nikah (lantern jaali doors), Starlit Sangeet (constellation names), Gatsby Vows (gilded gates), Vologda Lace (lifted lace veil), Gzhel Garden (painted plate), Mehendi Ambi (henna cone), Sage Linen, Terracotta Table, Lotus Vows (Russian–Indian fusion), Our Polaroids |
+| Engagements (8) | Solitaire, Champagne Toast, Roka Marigold, Moscow Evening, Ring Ceremony, She Said Yes, Wisteria Promise, Snapshots of Us |
+| Anniversaries (6) | Pearl Years, Ruby Devotion, Golden Jubilee, Then & Now (drag comparison), Silver Birch (Серебряная свадьба), Champagne Decade |
+| Birthdays (8) | Champagne Noir (pop the cork), Dirty Thirty (disco), Forty Fabulous (deco), Fifty Garden, Sixty Blessings (light the lamps), Sundowner, День рождения (Gzhel), Velvet Cake (blow out the candles) |
+| Children's parties (8) | Balloon Parade (pop to reveal), Under the Sea, Starship (3-2-1 launch), Sleepy Moon, Sunshine Picnic, Little Artist (paint splashes), Princess Castle (doors open), Jungle Safari |
+| Baby showers (6) | Cloud Nine, Godh Bharai, Little Star, Blush Bundle (untie the ribbon), Bump Portrait, Sage Lullaby |
+| Greetings (10) | Love Letter, Many Happy Returns, Festival of Lights (light the diyas), Eid Mubarak, Merry Christmas (frosted window), С Новым годом (midnight chimes), Maslenitsa (flip the blin), With Gratitude, Welcome Little One, Memory Portrait |
 
-Built from **15 card layouts** (classic, arch, editorial, monogram, botanical, photo, deco, jharokha, lace, polaroid,
-confetti, watercolour, split, full-bleed, letterpress — `src/components/designs/layouts/cards.tsx`), **10 website
-layouts** with signature reveals (romance, editorial, arch, cinematic, magazine, letter, timeline, gallery, deco curtain,
-playful balloons — `src/components/site/heroes.tsx`), 19 colour worlds, ~29 hand-drawn SVG motifs and font pairings
-that cover Cyrillic and Devanagari (`src/lib/fonts.ts`). No paid stock art: everything is SVG/CSS.
-Admins feature, hide, reorder and group templates into seasonal collections at `/admin/templates`.
+**Motion:** GSAP (ScrollTrigger, SplitText, DrawSVG), Lenis smooth scroll and light OGL/WebGL layers (gold dust,
+starfields, bubbles, embers, snow). Openings are CSS-first (no flash, work without JS); everything honours
+`prefers-reduced-motion`; `compact` previews skip scroll-jacking, WebGL and audio; `animate=false` cards are static
+for PNG/print. All text is editable (`<E>`), photo slots and sections are editor-aware, palettes/fonts honoured.
+EN/RU/HI with Cyrillic and Devanagari fonts per template.
 
+**Music:** each template declares a score; `src/templates/_kit/Music.tsx` synthesises it live in WebAudio (piano
+romance, strings waltz, sitar dawn, music box, lo-fi glow, folk balalaika, ambient sea, celebration swing) — no audio
+files, no licensing. Off by default; guests tap “♪ Play our song”.
+
+**Review:** `/dev/template/<id>?kind=website|invite|save|story|thankyou|greeting` (dev only) renders any template
+with sample data; `/dev/music`, `/dev/studio` likewise.
+
+## Product design
+
+Brand system (wax-seal wordmark, fluid type scale, motion tokens in `src/templates/_kit/motion.ts`), an
+Awwwards-style landing page (live bespoke templates in the hero, scroll story, poster wall, occasion index),
+`/templates` poster wall where each card plays its opening in view, and a calmer studio: floating chat, desktop/phone
+device frames for websites, a “bloom” onboarding as the first names arrive.
 ## Visual editor (in sync with the conversation)
 
 Conversation stays first, but the preview is directly editable (“✎ Edit on preview”):

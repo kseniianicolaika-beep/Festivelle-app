@@ -6,7 +6,7 @@ import { themeById } from "@/lib/themes";
 import type { Profile } from "@/lib/profile";
 import type { MotifId } from "@/lib/motifs";
 
-type Step = { who: "you" | "ai"; text: string; profile?: Partial<Profile>; theme?: string; layout?: string; motif?: MotifId };
+type Step = { who: "you" | "ai"; text: string; profile?: Partial<Profile>; theme?: string; layout?: string; motif?: MotifId; template?: string };
 export type DemoScript = Step[];
 
 // "Talk → it designs itself": a scripted conversation that restyles a real invitation as it plays.
@@ -18,8 +18,8 @@ export function TalkDemo({ script, labels }: { script: DemoScript; labels: { you
     return () => clearTimeout(t);
   }, [n, script.length]);
   const shown = reduce ? script : script.slice(0, n);
-  const state = shown.reduce<{ profile: Profile; theme: string; layout: string; motif?: MotifId }>(
-    (s, st) => ({ profile: { ...s.profile, ...st.profile }, theme: st.theme ?? s.theme, layout: st.layout ?? s.layout, motif: st.motif ?? s.motif }),
+  const state = shown.reduce<{ profile: Profile; theme: string; layout: string; motif?: MotifId; template?: string }>(
+    (s, st) => ({ profile: { ...s.profile, ...st.profile }, theme: st.theme ?? s.theme, layout: st.layout ?? s.layout, motif: st.motif ?? s.motif, template: st.template ?? s.template }),
     { profile: { occasion: "wedding", language: "en" }, theme: "mogra", layout: "classic" },
   );
   return (
@@ -36,7 +36,7 @@ export function TalkDemo({ script, labels }: { script: DemoScript; labels: { you
         </AnimatePresence>
       </div>
       <motion.div key={state.theme + state.layout} initial={{ opacity: 0.4, filter: "blur(8px)" }} animate={{ opacity: 1, filter: "blur(0px)" }} transition={{ duration: 0.9 }} className="mx-auto w-full max-w-[340px]">
-        <Paper kind="invite" layout={state.layout} design={{ motif: state.motif }} profile={state.profile} theme={themeById(state.theme)} className="shadow-[0_50px_90px_-40px_rgba(74,20,36,.7)]" />
+        <Paper kind="invite" layout={state.layout} design={{ motif: state.motif, template: state.template }} profile={state.profile} theme={themeById(state.theme)} className="shadow-[0_50px_90px_-40px_rgba(74,20,36,.7)]" />
       </motion.div>
     </div>
   );

@@ -1,0 +1,15 @@
+/* Starlit Sangeet */
+.sang-sky { background:
+  radial-gradient(90% 55% at 50% 108%, color-mix(in oklab, var(--t-accent) 22%, #3b2b72) 0%, transparent 70%),
+  radial-gradient(60% 40% at 80% 10%, rgba(120, 100, 220, .18), transparent 70%),
+  linear-gradient(180deg, #07081a 0%, color-mix(in oklab, var(--t-bg) 70%, #0b0d22) 55%, var(--t-bg) 100%); }
+.sang { background-image: radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.35), transparent), radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,.25), transparent), radial-gradient(1.2px 1.2px at 40% 80%, rgba(246,214,138,.35), transparent);
+  background-size: 340px 340px, 420px 420px, 520px 520px; }
+.sang-alt { background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--t-surface) 70%, transparent) 20%, color-mix(in oklab, var(--t-surface) 70%, transparent) 80%, transparent); }
+.sang-arch { box-shadow: 0 0 0 1px rgba(233,185,73,.15), 0 40px 90px -30px rgba(0,0,0,.7), 0 0 80px -30px rgba(233,185,73,.35); }
+.sang-leader { border-bottom: 1px dotted color-mix(in oklab, var(--t-gold) 55%, transparent); transform: translateY(-.35em); }
+.sang-count { border: 1px solid color-mix(in oklab, var(--t-gold) 55%, transparent); clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: rgba(255,255,255,.03); padding-inline: 2rem; }
+.sang-rsvp { background: rgba(255, 255, 255, .035); backdrop-filter: blur(6px); }
+.sang .wa-name > div { display: inline-block; }
+/* Devanagari breaks apart when tracked: drop letter-spacing for Hindi */
+[lang="hi"].sang *, [lang="hi"].sang-card * { letter-spacing: 0 !important; }

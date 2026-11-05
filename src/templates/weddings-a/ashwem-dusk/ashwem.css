@@ -1,0 +1,19 @@
+/* Ashwem Dusk */
+.ash-film { box-shadow: 0 40px 90px -40px rgba(40, 10, 30, .65); }
+.ash-sprockets { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle, transparent 0, transparent 0) ;
+  -webkit-mask: none; }
+.ash-sprockets::before, .ash-sprockets::after { content: ""; position: absolute; left: 0; right: 0; height: 10px;
+  background: repeating-linear-gradient(90deg, transparent 0 14px, rgba(255,240,220,.55) 14px 22px, transparent 22px 30px); opacity: .35; }
+.ash-sprockets::before { top: 0; } .ash-sprockets::after { bottom: 0; }
+.ash-dropcap::first-letter { font-family: var(--wa-display); float: left; font-size: 4.6em; line-height: .8; padding: .08em .12em 0 0; color: var(--t-accent); }
+.ash-dark .ash-dropcap::first-letter { color: #ffcf8f; }
+.ash-rsvp { background: rgba(255, 248, 238, .94); box-shadow: 0 0 0 1px rgba(255,220,170,.4), 0 50px 100px -40px rgba(0,0,0,.6), 0 0 80px -20px rgba(255,190,120,.25); }
+.ash-rsvp::before { content: ""; position: absolute; inset: 8px; border: 1px solid color-mix(in oklab, var(--t-gold) 55%, transparent); pointer-events: none; }
+.ash-strip { scrollbar-width: none; box-shadow: inset 0 12px 0 -4px #140c18, inset 0 -12px 0 -4px #140c18; position: relative;
+  background-image: repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,240,220,.22) 18px 28px, transparent 28px 40px), repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,240,220,.22) 18px 28px, transparent 28px 40px);
+  background-size: 100% 8px, 100% 8px; background-position: 0 6px, 0 calc(100% - 6px); background-repeat: repeat-x; }
+.ash-strip::-webkit-scrollbar { display: none; }
+.wa-ping { transform-box: fill-box; transform-origin: center; animation: ash-ping 2.4s ease-out infinite; }
+@keyframes ash-ping { 0% { transform: scale(.4); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
+.ash .wa-ch { display: inline-block; }
