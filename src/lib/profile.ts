@@ -1,6 +1,8 @@
 export type WeddingEvent = { name: string; date?: string; time?: string; venue?: string };
 
 export type Profile = {
+  occasion?: import("./occasions").OccasionId; // default "wedding"
+  age?: number; // birthdays / anniversaries (years)
   partner1?: string;
   partner2?: string;
   culture?: "indian" | "russian" | "fusion" | "other";

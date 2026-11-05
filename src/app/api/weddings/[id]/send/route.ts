@@ -1,7 +1,8 @@
 import { sql } from "@/lib/db";
 import { appUrl, requireOwner } from "@/lib/guard";
 import { emailEnabled, inviteHtml, sendEmail } from "@/lib/email";
-import { coupleNames } from "@/lib/profile";
+import { displayNames } from "@/lib/occasions";
+import { siteUrl } from "@/lib/commerce";
 import { themeById } from "@/lib/themes";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -14,8 +15,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const valid = (guests ?? []).filter((x) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x.email)).slice(0, 500);
   if (!valid.length) return Response.json({ error: "No valid email addresses found." }, { status: 400 });
 
-  const url = `${appUrl(req)}/w/${w.slug}`;
-  const [a, b] = coupleNames(w.profile);
+  const url = siteUrl(w, appUrl(req));
+  const names = displayNames(w.profile);
   const theme = themeById(w.theme);
   let sent = 0;
   const failed: string[] = [];
@@ -23,7 +24,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     let status = "saved";
     if (emailEnabled()) {
       try {
-        await sendEmail(guest.email, `${a} & ${b} — you're invited`, inviteHtml(w.profile, theme, url, guest.name));
+        await sendEmail(guest.email, `${names} — you're invited`, inviteHtml(w.profile, theme, url, guest.name));
         status = "sent";
         sent++;
       } catch {

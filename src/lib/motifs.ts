@@ -14,6 +14,13 @@ export const MOTIFS = [
   { id: "doves", name: "Doves & olive", tags: ["christian", "universal"] },
   { id: "khokhloma", name: "Khokhloma berries", tags: ["russian", "folk"] },
   { id: "mandala", name: "Mandala", tags: ["mehendi", "indian"] },
+  { id: "balloons", name: "Balloons", tags: ["kids", "birthday"] },
+  { id: "cake", name: "Tiered cake", tags: ["birthday", "anniversary"] },
+  { id: "moon", name: "Moon & clouds", tags: ["baby", "lullaby"] },
+  { id: "champagne", name: "Champagne coupes", tags: ["birthday", "engagement"] },
+  { id: "ribbon", name: "Silk ribbon", tags: ["greeting", "gift"] },
+  { id: "rattle", name: "Rattle & stars", tags: ["baby"] },
+  { id: "confetti", name: "Confetti", tags: ["kids", "party"] },
 ] as const;
 
 export type MotifId = (typeof MOTIFS)[number]["id"];

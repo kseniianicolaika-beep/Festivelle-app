@@ -3,15 +3,18 @@ import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth/server";
 import { isAdmin } from "@/lib/admin";
 import { sql } from "@/lib/db";
-import { BRAND } from "@/lib/brand";
-import { coupleNames, formatDate, type Profile } from "@/lib/profile";
+import { AdminNav } from "./AdminNav";
+import { displayNames, OCCASIONS, occasionOf } from "@/lib/occasions";
+import { comp } from "./actions";
+import { formatDate, type Profile } from "@/lib/profile";
 import { themeById } from "@/lib/themes";
-import { aiEnabled } from "@/lib/ai";
+import { aiProvider } from "@/lib/ai";
+import { PROVIDERS } from "@/lib/payments";
 import { emailEnabled } from "@/lib/email";
 import { Aurora } from "@/components/fx/Aurora";
 import { Reveal } from "@/components/fx/Reveal";
 
-type Row = { id: string; slug: string; owner_id: string; owner_email: string | null; profile: Profile; theme: string; published: boolean; plan: string; rsvps: number; attending: number; guests: number; updated_at: string };
+type Row = { id: string; slug: string; owner_id: string; owner_email: string | null; profile: Profile; theme: string; published: boolean; plan: string; tier: string | null; expires_at: string | null; subdomain: string | null; rsvps: number; attending: number; guests: number; updated_at: string };
 
 export default async function Admin() {
   const user = await currentUser();
@@ -19,7 +22,7 @@ export default async function Admin() {
   if (!isAdmin(user)) notFound();
 
   const rows = (await sql`
-    SELECT w.id, w.slug, w.owner_id, w.profile, w.theme, w.published, w.plan, w.updated_at,
+    SELECT w.id, w.slug, w.owner_id, w.profile, w.theme, w.published, w.plan, w.updated_at, w.tier, w.expires_at, w.subdomain,
       (SELECT email FROM neon_auth."user" u WHERE u.id::text = w.owner_id) AS owner_email,
       (SELECT count(*)::int FROM rsvps r WHERE r.wedding_id = w.id) AS rsvps,
       (SELECT coalesce(sum(party_size), 0)::int FROM rsvps r WHERE r.wedding_id = w.id AND r.attending) AS attending,
@@ -29,8 +32,8 @@ export default async function Admin() {
   const users = ((await sql`SELECT count(*)::int AS n FROM neon_auth."user"`.catch(() => [{ n: null }])) as { n: number | null }[])[0].n;
 
   const stats = [
-    ["Couples", users ?? "—"],
-    ["Weddings", rows.length],
+    ["Customers", users ?? "—"],
+    ["Celebrations", rows.length],
     ["Published", rows.filter((r) => r.published).length],
     ["RSVPs", rows.reduce((n, r) => n + r.rsvps, 0)],
     ["Guests attending", rows.reduce((n, r) => n + r.attending, 0)],
@@ -39,11 +42,8 @@ export default async function Admin() {
   return (
     <main className="grain relative min-h-dvh overflow-hidden">
       <Aurora />
-      <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-7">
-        <Link href="/studio" className="display text-2xl">{BRAND.name}</Link>
-        <span className="rounded-full bg-wine px-3.5 py-1.5 text-xs tracking-widest text-[#fbeee6]">ADMIN · {user.email}</span>
-      </nav>
-      <div className="relative z-10 mx-auto max-w-7xl px-6 pb-24">
+      <AdminNav active="overview" email={user.email} />
+      <div className="relative z-10 mx-auto max-w-7xl px-6 pb-24 pt-8">
         <Reveal><h1 className="display text-5xl">Every love story, <em className="text-rose">at a glance</em></h1></Reveal>
         <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-5">
           {stats.map(([k, v], i) => (
@@ -56,7 +56,10 @@ export default async function Admin() {
           ))}
         </div>
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
-          <span className={`rounded-full px-3 py-1 ${aiEnabled() ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>AI: {aiEnabled() ? "OpenRouter connected" : "not configured — rule engine"}</span>
+          <span className={`rounded-full px-3 py-1 ${aiProvider() ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>AI: {aiProvider() ?? "not configured — rule engine"}</span>
+          {Object.entries(PROVIDERS).filter(([id]) => id !== "test").map(([id, p]) => (
+            <span key={id} className={`rounded-full px-3 py-1 ${p.enabled() ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{p.note.split("· ")[1]}: {p.enabled() ? "live" : "no keys"}</span>
+          ))}
           <span className={`rounded-full px-3 py-1 ${emailEnabled() ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>Email: {emailEnabled() ? "connected" : "not configured"}</span>
         </div>
 
@@ -64,18 +67,27 @@ export default async function Admin() {
           <div className="glass mt-10 overflow-x-auto rounded-[28px]">
             <table className="w-full min-w-[860px] text-left text-sm">
               <thead className="text-muted">
-                <tr className="border-b border-line">{["Couple", "Owner", "Date", "Style", "Status", "RSVPs", "Guests", ""].map((h) => <th key={h} className="eyebrow px-5 py-4 font-normal">{h}</th>)}</tr>
+                <tr className="border-b border-line">{["Celebration", "Owner", "Date", "Style", "Status", "RSVPs", "Guests", ""].map((h) => <th key={h} className="eyebrow px-5 py-4 font-normal">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {rows.map((r) => {
-                  const [a, b] = coupleNames(r.profile);
                   return (
                     <tr key={r.id} className="border-b border-line/60 transition hover:bg-white/50">
-                      <td className="display px-5 py-4 text-lg">{r.profile.partner1 ? `${a} & ${b}` : <span className="text-muted">Not started</span>}</td>
+                      <td className="display px-5 py-4 text-lg">{r.profile.partner1 ? displayNames(r.profile) : <span className="text-muted">Not started</span>}<span className="block font-sans text-[11px] text-muted">{OCCASIONS[occasionOf(r.profile)].name}</span></td>
                       <td className="px-5 py-4 text-muted">{r.owner_email ?? r.owner_id.slice(0, 8)}</td>
                       <td className="px-5 py-4">{formatDate(r.profile.date) || "—"}</td>
                       <td className="px-5 py-4">{themeById(r.theme).name}</td>
-                      <td className="px-5 py-4">{r.published ? <span className="text-emerald-700">Live</span> : <span className="text-muted">Draft</span>}</td>
+                      <td className="px-5 py-4">
+                        {r.published ? <span className="text-emerald-700">Live</span> : <span className="text-muted">Draft</span>}
+                        <span className="block text-[11px] text-muted">{r.tier ?? "free"}{r.expires_at ? ` · until ${new Date(r.expires_at).toLocaleDateString("en-GB")}` : ""}</span>
+                        {!r.tier && (
+                          <form action={comp} className="mt-1 flex gap-1">
+                            <input type="hidden" name="id" value={r.id} />
+                            <select name="tier" className="rounded border border-line bg-white px-1 text-[11px]"><option value="basic">basic</option><option value="premium">premium</option><option value="luxury">luxury</option></select>
+                            <button className="text-[11px] text-wine underline">Comp</button>
+                          </form>
+                        )}
+                      </td>
                       <td className="px-5 py-4">{r.rsvps} <span className="text-muted">({r.attending} coming)</span></td>
                       <td className="px-5 py-4">{r.guests}</td>
                       <td className="whitespace-nowrap px-5 py-4 text-right">

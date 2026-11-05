@@ -110,6 +110,79 @@ const statements = [
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS assets_ws_idx ON assets(workspace_id, created_at DESC)`,
+
+  // ── Commerce: packages, hosting windows, subdomains, orders, promos, partners, AI credits, settings ──
+  `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS tier text`,
+  `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS video_tier text`,
+  `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS activated_at timestamptz`,
+  `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS expires_at timestamptz`,
+  `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS subdomain text UNIQUE`,
+  `CREATE TABLE IF NOT EXISTS settings (
+    key text PRIMARY KEY,
+    value jsonb NOT NULL,
+    updated_by text,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS partners (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL,
+    category text NOT NULL,
+    city text,
+    url text,
+    blurb text,
+    offer text,
+    listing text NOT NULL DEFAULT 'free' CHECK (listing IN ('free','featured','sponsored')),
+    ref_code text UNIQUE NOT NULL,
+    commission_pct numeric NOT NULL DEFAULT 10,
+    contact_email text,
+    agreement text,
+    active boolean NOT NULL DEFAULT true,
+    clicks int NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS promos (
+    code text PRIMARY KEY,
+    percent_off int NOT NULL DEFAULT 0 CHECK (percent_off BETWEEN 0 AND 100),
+    max_uses int,
+    uses int NOT NULL DEFAULT 0,
+    expires_at timestamptz,
+    partner_id uuid REFERENCES partners(id) ON DELETE SET NULL,
+    active boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS orders (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id text NOT NULL,
+    email text,
+    wedding_id uuid REFERENCES weddings(id) ON DELETE SET NULL,
+    product text NOT NULL,
+    description text NOT NULL,
+    currency text NOT NULL,
+    amount_minor int NOT NULL,
+    list_minor int NOT NULL,
+    promo_code text,
+    partner_id uuid REFERENCES partners(id) ON DELETE SET NULL,
+    commission_minor int NOT NULL DEFAULT 0,
+    provider text NOT NULL,
+    provider_ref text,
+    status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','failed','refunded')),
+    paid_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS orders_user_idx ON orders(user_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS orders_ref_idx ON orders(provider, provider_ref)`,
+  `CREATE TABLE IF NOT EXISTS credits (
+    user_id text PRIMARY KEY,
+    balance int NOT NULL DEFAULT 0,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS ai_usage (
+    user_id text NOT NULL,
+    day date NOT NULL DEFAULT current_date,
+    kind text NOT NULL DEFAULT 'text',
+    n int NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, day, kind)
+  )`,
 ];
 
 for (const s of statements) await sql.query(s);

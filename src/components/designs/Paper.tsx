@@ -1,5 +1,6 @@
 import type { Profile } from "@/lib/profile";
-import { coupleNames, formatDate } from "@/lib/profile";
+import { formatDate } from "@/lib/profile";
+import { nameParts, occasionInvite, occasionLine, occasionOf } from "@/lib/occasions";
 import { t } from "@/lib/i18n";
 import type { Theme } from "@/lib/themes";
 import { themeVars } from "@/lib/themes";
@@ -19,17 +20,20 @@ function content(kind: Kind, d: Design, p: Profile) {
   const L = t(p.language);
   const W = p.language === "ru" ? RU : p.language === "hi" ? HI : EN;
   const ev = p.events?.[d.eventIndex ?? 0];
+  const occ = occasionOf(p);
+  const wed = occ === "wedding";
   const date = formatDate(p.date, p.language);
   const where = p.venue || p.city || "";
   const base = { eyebrow: "", lead: "", headline: "", names: true, sub: "", date, where, body: "", footer: "", items: d.items ?? [], number: undefined as number | undefined, hashtag: "" };
   const c = (() => {
     switch (kind) {
-      case "invite": return { ...base, lead: p.inviteLine || L.invite, sub: p.tradition ?? "", footer: p.blessing ?? "" };
+      case "invite": return wed ? { ...base, lead: p.inviteLine || L.invite, sub: p.tradition ?? "", footer: p.blessing ?? "" } : { ...base, lead: p.inviteLine || occasionInvite(p), sub: occasionLine(p), footer: p.blessing ?? "" };
+      case "greeting": return { ...base, eyebrow: occasionLine(p), headline: "", body: p.story ?? "", footer: p.blessing ?? "", date: "", where: "" };
       case "save": return { ...base, eyebrow: W.save, where: p.city || where };
       case "event": return { ...base, lead: W.join, headline: ev?.name ?? "Celebration", names: true, date: [formatDate(ev?.date ?? p.date, p.language), ev?.time].filter(Boolean).join(" · "), where: ev?.venue || where };
-      case "story": return { ...base, eyebrow: W.save, footer: p.blessing ?? "" };
-      case "post": return { ...base, eyebrow: L.getting };
-      case "welcome": return { ...base, eyebrow: W.welcome };
+      case "story": return { ...base, eyebrow: wed ? W.save : occasionLine(p), footer: p.blessing ?? "" };
+      case "post": return { ...base, eyebrow: wed ? L.getting : occasionLine(p) };
+      case "welcome": return { ...base, eyebrow: wed ? W.welcome : p.language === "ru" ? "Добро пожаловать" : p.language === "hi" ? "स्वागत है" : "Welcome" };
       case "program": return { ...base, headline: "Order of ceremony", names: false };
       case "menu": return { ...base, headline: "Menu", names: false };
       case "table": return { ...base, headline: W.table, names: false, number: d.number ?? 1, date: "", where: "" };
@@ -50,7 +54,8 @@ const Corner = ({ className }: { className: string }) => (
 );
 
 export function Paper({ kind, layout, design, profile, theme, photoUrl, animate = true, className = "" }: Props) {
-  const [a, b] = coupleNames(profile);
+  const [a, b] = nameParts(profile);
+  const both = b ? `${a} & ${b}` : a;
   const c = content(kind, design, profile);
   const ratio = KINDS[kind].ratio;
   const scale = Math.min(Math.max(design.scale ?? 1, 0.7), 1.4);
@@ -83,13 +88,13 @@ export function Paper({ kind, layout, design, profile, theme, photoUrl, animate 
         <>
           <p className="script text-[var(--t-accent)]" style={{ fontSize: "6cqw" }}>{c.body}</p>
           <p className="display foil break-all leading-tight" style={{ fontSize: `${9 * scale}cqw` }}>{c.hashtag}</p>
-          <p className="eyebrow text-[var(--t-muted)]" style={{ fontSize: "2.3cqw" }}>{a} &amp; {b}</p>
+          <p className="eyebrow text-[var(--t-muted)]" style={{ fontSize: "2.3cqw" }}>{both}</p>
         </>
       ) : (
         <>
           {c.headline && <p className={c.names ? "display text-[var(--t-accent)]" : "display foil"} style={{ fontSize: c.names ? "6.5cqw" : `${(landscape ? 9 : 11) * scale}cqw`, lineHeight: 1.05 }}>{c.headline}</p>}
           {c.names && names(c.headline ? nameSize * 0.72 : nameSize)}
-          {!c.names && kind !== "table" && <p className="script text-[var(--t-accent)]" style={{ fontSize: "5cqw" }}>{a} &amp; {b}</p>}
+          {!c.names && kind !== "table" && <p className="script text-[var(--t-accent)]" style={{ fontSize: "5cqw" }}>{both}</p>}
           {c.sub && <p className="eyebrow text-[var(--t-muted)]" style={{ fontSize: "2.1cqw" }}>{c.sub}</p>}
         </>
       )}
@@ -160,7 +165,7 @@ export function Paper({ kind, layout, design, profile, theme, photoUrl, animate 
           <div className="w-[3cqw] bg-[var(--t-accent)]/85" />
           <div className="relative flex flex-1 flex-col justify-between p-[9cqw]">
             <div className="flex items-center justify-between">
-              <p className="eyebrow text-[var(--t-muted)]" style={{ fontSize: "2cqw" }}>{(a[0] ?? "") + " · " + (b[0] ?? "")}</p>
+              <p className="eyebrow text-[var(--t-muted)]" style={{ fontSize: "2cqw" }}>{b ? `${a[0] ?? ""} · ${b[0]}` : a}</p>
               <Motif key={theme.id + motif} theme={theme} motif={motif} className={`${draw} w-[22cqw]`} />
             </div>
             {body}
@@ -177,7 +182,7 @@ export function Paper({ kind, layout, design, profile, theme, photoUrl, animate 
                 <ellipse key={i} cx="50" cy="5" rx="1.6" ry="4" fill="none" stroke="var(--t-gold)" strokeWidth=".5" transform={`rotate(${i * 20} 50 50)`} />
               ))}
             </svg>
-            <p className="display foil" style={{ fontSize: "12cqw" }}>{a[0]}<span className="script mx-[0.5cqw] text-[var(--t-accent)]" style={{ fontSize: "7cqw" }}>&amp;</span>{b[0]}</p>
+            <p className="display foil" style={{ fontSize: "12cqw" }}>{a[0]}{b && <><span className="script mx-[0.5cqw] text-[var(--t-accent)]" style={{ fontSize: "7cqw" }}>&amp;</span>{b[0]}</>}{!b && profile.age ? <span className="script mx-[0.5cqw] text-[var(--t-accent)]" style={{ fontSize: "7cqw" }}>{profile.age}</span> : null}</p>
           </div>
           {body}
           {footer}

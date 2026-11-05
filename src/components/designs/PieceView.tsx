@@ -11,7 +11,7 @@ export function PieceView({ doc, profile, suiteTheme, animate = true, rsvpSlot }
   const theme = themeById(doc.design.theme ?? suiteTheme);
   if (doc.kind === "website")
     return (
-      <WeddingSite profile={profile} theme={theme} heroUrl={media(profile.heroKey)} layout={doc.layout} motif={doc.design.motif} compact>
+      <WeddingSite profile={profile} theme={theme} heroUrl={media(profile.heroKey)} layout={doc.layout} motif={doc.design.motif} design={doc.design} compact>
         {rsvpSlot}
       </WeddingSite>
     );

@@ -1,11 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// Couples' custom domains point at this Vercel project. Any host that isn't the app's own is treated as a wedding domain.
+// The app's own hosts pass through. Everything else is a celebration site:
+//  • <subdomain>.ROOT_DOMAIN — personal links, e.g. anna-mark.festivelle.com
+//  • a host's custom domain (connected through the Vercel Domains API)
 const APP_HOST = /(^localhost(:\d+)?$)|(\.vercel\.app$)/;
 
 export function proxy(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").toLowerCase();
+  const root = (process.env.ROOT_DOMAIN ?? "").toLowerCase();
   const own = (process.env.APP_HOSTS ?? "").split(",").map((h) => h.trim()).filter(Boolean);
+  if (root) own.push(root, `www.${root}`, `app.${root}`);
   if (!host || APP_HOST.test(host) || own.includes(host)) return NextResponse.next();
   if (req.nextUrl.pathname === "/") return NextResponse.rewrite(new URL(`/d/${encodeURIComponent(host)}`, req.url));
   return NextResponse.next();

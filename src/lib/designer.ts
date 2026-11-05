@@ -3,6 +3,8 @@ import { pickTheme, THEMES } from "./themes";
 import { aiEnabled, aiTurn } from "./ai";
 import { KINDS, PAPER_LAYOUTS, SITE_LAYOUTS, type Design, type Doc, type Kind } from "./templates";
 import { MOTIFS, INVOCATIONS } from "./motifs";
+import { sectionLayout, SECTIONS, type SectionId } from "./templates";
+import { OCCASIONS, OCCASION_EVENTS, occasionOf, type OccasionId } from "./occasions";
 
 export type Turn = { reply: string; chips: string[]; profile: Profile; step: number; theme?: string; design?: Partial<Design> & { layout?: string }; addPiece?: Kind };
 
@@ -24,7 +26,8 @@ const TRADITIONS: Record<string, string[]> = {
 
 export const VIBES = ["Sunset beach", "Portuguese villa", "Royal heritage", "White Nights classic", "Quiet & minimal"];
 
-export function opening(): Omit<Turn, "profile" | "step"> {
+export function opening(occasion: OccasionId = "wedding"): Omit<Turn, "profile" | "step"> {
+  if (occasion !== "wedding") return { reply: FLOWS[occasion][0].ask({ occasion }).reply, chips: FLOWS[occasion][0].ask({ occasion }).chips };
   return {
     reply: "Congratulations — let’s make something beautiful. I’ll ask a few gentle questions and design your invitation and wedding website as we talk.\n\nFirst, what are your names?",
     chips: [],
@@ -101,7 +104,137 @@ export async function converse(profile: Profile, step: number, message: string, 
   // Design edits on the active piece work in rules mode too, at any step.
   const de = ruleDesign(message, doc);
   if (de && step >= DONE) return { ...de, profile, step, theme };
+  const occ = occasionOf(profile);
+  if (occ !== "wedding" && step < DONE) return flowRules(occ, profile, step, message, theme);
   return converseRules(profile, step, message, theme);
+}
+
+// ── Rule-based conversations for every other occasion (the AI handles these natively when configured) ──
+type Q = { ask: (p: Profile) => { reply: string; chips: string[] }; take: (m: string, p: Profile) => Profile | string };
+
+const LANG_Q: Q = {
+  ask: () => ({ reply: "Which language should your guests read first?", chips: ["English", "Русский", "हिन्दी"] }),
+  take: (m, p) => ({ ...p, language: /рус|russ/i.test(m) ? "ru" : /हिन|hindi/i.test(m) ? "hi" : "en" }),
+};
+const DATE_Q = (what: string): Q => ({
+  ask: () => ({ reply: `When is ${what}? “14 Feb 2027” is perfect — or say “not sure yet”.`, chips: ["Not sure yet"] }),
+  take: (m, p) => { const d = parseDate(m); if (!d && !/not sure|later|tbd/i.test(m)) return "I didn’t quite catch the date — try “14 Feb 2027”."; return { ...p, date: d ?? undefined }; },
+});
+const VENUE_Q: Q = {
+  ask: () => ({ reply: "Where will everyone gather?", chips: ["At home", "A restaurant", "A beach in Goa", "A garden"] }),
+  take: (m, p) => ({ ...p, venue: m, city: /goa/i.test(m) ? "Goa, India" : p.city }),
+};
+const EVENTS_Q = (o: Exclude<OccasionId, "wedding">): Q => ({
+  ask: () => ({ reply: "What’s planned? Tap any that apply, or type your own.", chips: [...OCCASION_EVENTS[o], "Just one celebration"] }),
+  take: (m, p) => {
+    const names = /just one/i.test(m) ? [OCCASIONS[o].name] : m.split(/\s*,\s*|\s+and\s+/).filter(Boolean);
+    return { ...p, events: names.map((name): WeddingEvent => ({ name: cap(name), date: p.date, venue: p.venue })) };
+  },
+});
+const VIBE_Q = (chips: string[], reply = "And the feeling — which is closest?"): Q => ({ ask: () => ({ reply, chips }), take: (m, p) => ({ ...p, vibe: m }) });
+const STORY_Q = (reply: string): Q => ({ ask: () => ({ reply, chips: ["Skip for now"] }), take: (m, p) => ({ ...p, story: /^skip/i.test(m) ? undefined : m }) });
+const NAME_Q = (reply: string): Q => ({
+  ask: () => ({ reply, chips: [] }),
+  take: (m, p) => {
+    const two = parseNames(m);
+    if (two) return { ...p, partner1: two[0], partner2: two[1] };
+    const one = cap(m.replace(/^\s*(it'?s|for|my name is|i am|i'm)\s+/i, "").replace(/[!.?…]+$/u, "").trim());
+    return one && one.split(/\s+/).length <= 4 ? { ...p, partner1: one, partner2: undefined } : "Just the name is perfect.";
+  },
+});
+const PAIR_Q = (reply: string): Q => ({ ask: () => ({ reply, chips: [] }), take: (m, p) => { const n = parseNames(m); return n ? { ...p, partner1: n[0], partner2: n[1] } : "Could you write both names, like “Elena & Vikram”?"; } });
+const AGE_Q = (reply: string, chips: string[] = []): Q => ({
+  ask: () => ({ reply, chips: [...chips, "Rather not say"] }),
+  take: (m, p) => { const n = Number(m.match(/\d{1,3}/)?.[0]); return Number.isFinite(n) && n > 0 ? { ...p, age: n } : { ...p, age: undefined }; },
+});
+
+const FLOWS: Record<Exclude<OccasionId, "wedding">, Q[]> = {
+  engagement: [
+    PAIR_Q("Congratulations — a yes deserves something beautiful. What are your names?"),
+    DATE_Q("the celebration"),
+    VENUE_Q,
+    EVENTS_Q("engagement"),
+    VIBE_Q(["Blush & romantic", "Black-tie champagne", "Portuguese villa", "Marigold roka", "Quiet & minimal"]),
+    LANG_Q,
+    STORY_Q("Tell me how the proposal happened — I’ll write it beautifully for your guests."),
+  ],
+  anniversary: [
+    PAIR_Q("What a lovely thing to celebrate. Whose love story is this? (Both names, please.)"),
+    AGE_Q("How many years together?", ["1", "10", "25", "40", "50"]),
+    DATE_Q("the celebration"),
+    VENUE_Q,
+    EVENTS_Q("anniversary"),
+    VIBE_Q(["Pearl & timeless", "Ruby & velvet", "White Nights classic", "Royal heritage", "Love letters"]),
+    LANG_Q,
+    STORY_Q("Share one memory from your years together — it will be the heart of the invitation."),
+  ],
+  birthday: [
+    NAME_Q("Let’s make it unforgettable. Whose birthday is it?"),
+    AGE_Q("Which birthday? (Only if they’d like it shown.)", ["30", "40", "50", "60"]),
+    DATE_Q("the party"),
+    VENUE_Q,
+    EVENTS_Q("birthday"),
+    VIBE_Q(["Black-tie champagne", "Midnight party", "Blush soirée", "Sunset on the beach", "Garden lunch"]),
+    LANG_Q,
+    STORY_Q("A line about the birthday person — I’ll turn it into something lovely."),
+  ],
+  kids: [
+    NAME_Q("Oh, a party! What’s the birthday child’s name?"),
+    AGE_Q("And how old are they turning?", ["1", "3", "5", "7", "10"]),
+    VIBE_Q(["Balloons & confetti", "Space & stars", "Jungle", "Unicorns", "Dinosaurs", "Under the sea"], "What’s the party theme?"),
+    DATE_Q("the party"),
+    VENUE_Q,
+    EVENTS_Q("kids"),
+    LANG_Q,
+  ],
+  baby_shower: [
+    NAME_Q("How wonderful. Who are we showering with love? (One name, or both parents.)"),
+    { ask: () => ({ reply: "Is it a boy, a girl — or a beautiful surprise?", chips: ["Boy", "Girl", "Twins", "A surprise"] }), take: (m, p) => ({ ...p, tradition: m }) },
+    DATE_Q("the shower"),
+    VENUE_Q,
+    EVENTS_Q("baby_shower"),
+    VIBE_Q(["Clouds & moon", "Blush & ribbons", "Jasmine & white", "Marigold godh bharai"]),
+    LANG_Q,
+  ],
+  greeting: [
+    NAME_Q("Let’s write something they’ll keep. Who is the card for?"),
+    { ask: () => ({ reply: "What’s the occasion?", chips: ["Birthday", "Anniversary", "Thank you", "Congratulations", "New baby", "Diwali", "New Year", "Christmas", "Eid"] }), take: (m, p) => ({ ...p, tradition: m }) },
+    { ask: (p) => ({ reply: `Write your message for ${p.partner1 ?? "them"} — or tell me one thing you love about them and I’ll write it.`, chips: ["Write it for me"] }), take: (m, p) => ({ ...p, story: /write it for me/i.test(m) ? cannedGreeting(p) : m }) },
+    { ask: () => ({ reply: "Who is it from? I’ll sign it for you.", chips: [] }), take: (m, p) => ({ ...p, blessing: /^(with|love|с )/i.test(m) ? m : `With love, ${cap(m.trim())}` }) },
+    VIBE_Q(["Love letter", "Champagne", "Pearl & timeless", "Starry night", "Blush"], "Choose the feeling of the card."),
+    LANG_Q,
+  ],
+};
+
+function cannedGreeting(p: Profile) {
+  const g = (p.tradition ?? "").toLowerCase();
+  const n = p.partner1 ?? "you";
+  if (/birth/.test(g)) return `Happy birthday, ${n}. Another year of your laugh, your kindness and the way you make every room warmer — the world is lucky to have you in it. Here’s to a year as bright as you are.`;
+  if (/anniv/.test(g)) return `To ${n} — every year you’ve shared is proof that the best love stories only get better. Wishing you many more chapters, just as beautiful.`;
+  if (/thank/.test(g)) return `${n}, thank you — truly. Your kindness meant more than you know, and it will be remembered for a long, long time.`;
+  if (/baby|born/.test(g)) return `Welcome to the world, little one — and congratulations, ${n}. May your home be full of lullabies, laughter and the softest kind of love.`;
+  if (/diwali/.test(g)) return `Wishing you a Diwali full of light, ${n} — may every diya bring warmth, joy and good fortune to your home.`;
+  return `Dear ${n}, sending you all our love today — may this moment be as wonderful as you are.`;
+}
+
+const FLOW_DONE: Record<Exclude<OccasionId, "wedding">, string> = {
+  engagement: "Your engagement invitation and website are ready — have a look. ✨\n\nKeep talking to change anything: “more champagne”, “move the dinner to 8pm”, “switch to Russian”.",
+  anniversary: "Your anniversary invitation and website are ready — have a look. ✨\n\nAsk for anything: “make it ruby”, “add a photo gallery”, “warmer wording”.",
+  birthday: "The invitation and party page are ready — have a look. ✨\n\nAsk me to change anything: “more glamorous”, “add dress code”, “switch to Russian”.",
+  kids: "The party invitation is ready — have a look! 🎈\n\nChange anything: “more colourful”, “add balloons”, “move the cake to 4pm”.",
+  baby_shower: "The baby-shower invitation and page are ready — have a look. ✨\n\nAsk for anything: “softer wording”, “add a gift registry note”, “switch to Hindi”.",
+  greeting: "Your card is ready — have a look. ✨\n\nAsk me to make it funnier, shorter or more tender, then download or share it.",
+};
+
+function flowRules(o: Exclude<OccasionId, "wedding">, profile: Profile, step: number, message: string, theme: string): Turn {
+  const flow = FLOWS[o];
+  const i = Math.min(step, flow.length - 1);
+  const r = flow[i].take(message.trim(), { ...profile, occasion: o });
+  if (typeof r === "string") return { reply: r, chips: flow[i].ask(profile).chips, profile, step };
+  const next = i + 1;
+  const nextTheme = r.vibe ? pickTheme(r.vibe, "") : theme;
+  if (next >= flow.length) return { reply: FLOW_DONE[o], chips: o === "greeting" ? ["Make it funnier", "Try another style", "Download"] : ["Try another style", "Show me templates", "Publish & send"], profile: r, step: DONE, theme: nextTheme };
+  return { ...flow[next].ask(r), profile: r, step: next, theme: nextTheme };
 }
 
 // Rule-based piece editing: layouts, motifs, invocations, new pieces, size.
@@ -110,8 +243,25 @@ function ruleDesign(m: string, doc?: Doc | null): Pick<Turn, "reply" | "chips" |
   const ALIASES: Record<Kind, string> = {
     website: "website|wedding site", invite: "invitation|invite card", save: "save[- ]the[- ]date", event: "event card|haldi card|mehendi card|sangeet card",
     story: "story|status", post: "square post|instagram post|post", welcome: "welcome sign|welcome board", program: "programme|program|order of ceremony",
-    menu: "menu", table: "table numbers?|table card", hashtag: "hashtag|photo sign", thankyou: "thank[- ]?you",
+    menu: "menu", table: "table numbers?|table card", hashtag: "hashtag|photo sign", thankyou: "thank[- ]?you( card)?", greeting: "greeting( card)?|card for",
   };
+  // Website sections: "move the gallery up", "hide the schedule", "show the RSVP"
+  if (doc?.kind === "website") {
+    const ALIAS: Record<SectionId, string> = { invitation: "invitation|message", story: "story", details: "details", schedule: "schedule|timeline|programme|program", venue: "venue|location|map|directions", gallery: "gallery|photos", rsvp: "rsvp|reply form", info: "info|information|faq" };
+    const sec = (Object.keys(ALIAS) as SectionId[]).find((s) => new RegExp(`\\b(${ALIAS[s]})\\b`).test(l));
+    if (sec) {
+      const { order, hidden } = sectionLayout(doc.design.sections);
+      const name = SECTIONS[sec].toLowerCase();
+      const i = order.indexOf(sec);
+      const move = (to: number) => { const o = order.filter((s) => s !== sec); o.splice(Math.max(0, Math.min(o.length, to)), 0, sec); return o; };
+      if (/\b(hide|remove|delete|without)\b/.test(l)) return { reply: `The ${name} is hidden — say “show the ${name}” to bring it back.`, chips: [], design: { sections: { order, hidden: [...hidden, sec] } } };
+      if (/\b(show|add|bring back|unhide)\b/.test(l) && hidden.has(sec)) return { reply: `The ${name} is back.`, chips: [], design: { sections: { order, hidden: [...hidden].filter((s) => s !== sec) } } };
+      if (/\b(to the top|first)\b/.test(l)) return { reply: `The ${name} now comes first.`, chips: [], design: { sections: { order: move(0), hidden: [...hidden] } } };
+      if (/\b(to the end|to the bottom|last)\b/.test(l)) return { reply: `The ${name} is now at the end.`, chips: [], design: { sections: { order: move(order.length), hidden: [...hidden] } } };
+      if (/\b(up|higher|earlier)\b/.test(l)) return { reply: `Moved the ${name} up.`, chips: [], design: { sections: { order: move(i - 1), hidden: [...hidden] } } };
+      if (/\b(down|lower|later)\b/.test(l)) return { reply: `Moved the ${name} down.`, chips: [], design: { sections: { order: move(i + 1), hidden: [...hidden] } } };
+    }
+  }
   const addKind = (Object.keys(ALIASES) as Kind[]).find((k) => new RegExp(`\\b(add|make|create|need|want|design|new)\\b[^.]*\\b(a |an |the |some )?(${ALIASES[k]})\\b`).test(l));
   if (addKind) return { reply: `A ${KINDS[addKind].name.toLowerCase()} is on its way — I've opened it for you. Tell me anything you'd like to change.`, chips: ["Try another layout", "Change the motif"], addPiece: addKind };
   if (!doc) return null;

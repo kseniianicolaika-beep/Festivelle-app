@@ -17,6 +17,12 @@ export type Wedding = {
   published: boolean;
   plan: string;
   custom_domain: string | null;
+  // Commerce (set by payments fulfilment — see src/lib/commerce.ts)
+  tier: "basic" | "premium" | "luxury" | null; // purchased website/greeting package; null = free draft
+  video_tier: "basic" | "premium" | "luxury" | null; // purchased video invitation/greeting
+  activated_at: string | null; // first publish after payment
+  expires_at: string | null; // hosting end: min(activated+12mo, event+30d) + extensions
+  subdomain: string | null; // anna-mark → anna-mark.festivelle.com
 };
 
 type U = { id: string } & Parameters<typeof isAdmin>[0];

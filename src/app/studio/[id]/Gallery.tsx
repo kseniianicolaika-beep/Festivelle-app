@@ -6,15 +6,16 @@ import { KINDS, defaultDesign, templatesFor, type Kind } from "@/lib/templates";
 import { themeById, themeVars } from "@/lib/themes";
 import { Paper } from "@/components/designs/Paper";
 import { Motif } from "@/components/Motif";
-import { coupleNames } from "@/lib/profile";
+import { nameParts, occasionLine, occasionOf } from "@/lib/occasions";
 
-const GROUPS = ["Stationery", "Online", "Social", "On the day", "After"] as const;
+const GROUPS = ["Stationery", "Online", "Social", "Greetings", "On the day", "After"] as const;
 export type Pick = { kind: Kind; layout: string; theme: string; motif?: string };
 
 // Browse every template, previewed live with the couple's own names, date and story.
 export function Gallery({ profile, initialKind, mode, onPick, onClose }: { profile: Profile; initialKind?: Kind; mode: "add" | "restyle"; onPick: (p: Pick) => void; onClose: () => void }) {
   const [kind, setKind] = useState<Kind>(initialKind ?? "invite");
-  const [a, b] = coupleNames(profile);
+  const [a, b] = nameParts(profile);
+  const occ = occasionOf(profile);
   const kinds = (Object.keys(KINDS) as Kind[]).filter((k) => mode === "add" || k === kind);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-end justify-center bg-wine/30 backdrop-blur-md md:items-center" onClick={onClose}>
@@ -44,7 +45,7 @@ export function Gallery({ profile, initialKind, mode, onPick, onClose }: { profi
         <div className="scroll-soft flex-1 overflow-y-auto px-6 pb-10 md:px-8">
           <AnimatePresence mode="popLayout">
             <motion.div key={kind} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`grid gap-5 ${kind === "website" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : KINDS[kind].ratio === "7/5" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"}`}>
-              {templatesFor(kind).map((tpl, i) => {
+              {templatesFor(kind, occ).map((tpl, i) => {
                 const th = themeById(tpl.theme);
                 return (
                   <motion.button key={tpl.id} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.035 }} whileHover={{ y: -6 }} onClick={() => onPick({ kind, layout: tpl.layout, theme: tpl.theme, motif: tpl.motif })} className="group text-left">
@@ -56,8 +57,8 @@ export function Gallery({ profile, initialKind, mode, onPick, onClose }: { profi
                           <div className={`relative flex h-[calc(100%-1.25rem)] ${tpl.layout === "editorial" ? "items-center justify-between gap-3 px-[7cqw]" : "flex-col items-center justify-center text-center"}`}>
                             <div className={tpl.layout === "editorial" ? "" : "flex flex-col items-center"}>
                               <Motif theme={th} className="mb-[2cqw] w-[24cqw]" />
-                              <p className="eyebrow opacity-70" style={{ fontSize: "1.8cqw" }}>are getting married</p>
-                              <p className="display foil leading-none" style={{ fontSize: "8cqw" }}>{a} <span className="script text-[var(--t-accent)]">&amp;</span> {b}</p>
+                              <p className="eyebrow opacity-70" style={{ fontSize: "1.8cqw" }}>{occasionLine(profile)}</p>
+                              <p className="display foil leading-none" style={{ fontSize: "8cqw" }}>{a}{b && <> <span className="script text-[var(--t-accent)]">&amp;</span> {b}</>}</p>
                             </div>
                             {tpl.layout === "editorial" && <div className="h-[60%] w-[30%] rounded-t-full border border-[var(--t-gold)]/60 bg-[var(--t-surface)]" />}
                           </div>

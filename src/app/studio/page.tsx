@@ -1,38 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { customAlphabet } from "nanoid";
 import { currentUser } from "@/lib/auth/server";
 import { sql } from "@/lib/db";
-import { opening } from "@/lib/designer";
-import { coupleNames, formatDate, type Profile } from "@/lib/profile";
+import { formatDate, type Profile } from "@/lib/profile";
+import { nameParts, OCCASIONS, occasionLine, occasionOf } from "@/lib/occasions";
 import { petalColors, themeById, themeVars } from "@/lib/themes";
 import { isAdmin } from "@/lib/admin";
 import { activeWorkspace, canEdit } from "@/lib/workspace";
-import { STARTER } from "@/lib/docs";
 import { Aurora } from "@/components/fx/Aurora";
 import { Reveal } from "@/components/fx/Reveal";
 import { Petals } from "@/components/fx/Petals";
 import { Motif } from "@/components/Motif";
 import { StudioNav } from "./StudioNav";
-
-const slugId = customAlphabet("abcdefghijkmnpqrstuvwxyz23456789", 8);
-
-async function createWedding(form: FormData) {
-  "use server";
-  const user = await currentUser();
-  if (!user) redirect("/auth/sign-in?next=/studio");
-  const { current } = await activeWorkspace(user);
-  if (!canEdit(current.role)) redirect("/studio");
-  const client = String(form.get("client") ?? "").trim().slice(0, 120) || null;
-  const o = opening();
-  const [w] = (await sql`
-    INSERT INTO weddings (owner_id, workspace_id, client_name, slug) VALUES (${user.id}, ${current.id}, ${client}, ${slugId()}) RETURNING id`) as { id: string }[];
-  await sql.transaction([
-    sql`INSERT INTO messages (wedding_id, role, content, chips) VALUES (${w.id}, 'assistant', ${o.reply}, ${JSON.stringify(o.chips)}::jsonb)`,
-    ...STARTER.map((s, i) => sql`INSERT INTO documents (wedding_id, kind, layout, position) VALUES (${w.id}, ${s.kind}, ${s.layout}, ${i})`),
-  ]);
-  redirect(`/studio/${w.id}`);
-}
 
 type Row = { id: string; profile: Profile; theme: string; published: boolean; client_name: string | null; pieces: number; rsvps: number };
 
@@ -46,7 +25,7 @@ export default async function Studio() {
       (SELECT count(*)::int FROM documents d WHERE d.wedding_id = w.id) AS pieces,
       (SELECT count(*)::int FROM rsvps r WHERE r.wedding_id = w.id) AS rsvps
     FROM weddings w WHERE w.workspace_id = ${current.id} ORDER BY w.updated_at DESC`) as Row[];
-  if (weddings.length === 0 && !agency && canEdit(current.role) && list.length === 1 && !isAdmin(user)) await createWedding(new FormData());
+  if (weddings.length === 0 && !agency && canEdit(current.role) && list.length === 1 && !isAdmin(user)) redirect("/studio/new");
 
   const groups = agency
     ? Object.entries(weddings.reduce<Record<string, Row[]>>((g, w) => ((g[w.client_name || "Unassigned"] ??= []).push(w), g), {}))
@@ -60,16 +39,15 @@ export default async function Studio() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 pb-28 pt-6 md:px-6">
         <Reveal>
           <p className="eyebrow text-rose">{agency ? "Agency studio" : "Your studio"}</p>
-          <h1 className="display mt-3 text-[2.6rem] leading-[1.05] md:text-6xl">{agency ? <>Every client&apos;s <em className="text-rose">love story</em></> : <>Love stories, <em className="text-rose">in progress</em></>}</h1>
+          <h1 className="display mt-3 text-[2.6rem] leading-[1.05] md:text-6xl">{agency ? <>Every client&apos;s <em className="text-rose">love story</em></> : <>Celebrations, <em className="text-rose">in progress</em></>}</h1>
         </Reveal>
 
         {canEdit(current.role) && (
           <Reveal delay={0.1}>
-            <form action={createWedding} className="glass mt-8 flex flex-col gap-2 rounded-[28px] p-2 sm:flex-row sm:items-center">
-              {agency && <input name="client" placeholder="Client (e.g. Anya & Rohan, Feb 2027)" className="min-w-0 flex-1 rounded-full bg-transparent px-5 py-3 text-[15px] outline-none placeholder:text-muted/70" />}
-              {!agency && <p className="flex-1 px-5 py-3 font-display text-lg italic text-muted">Every great love story begins with a conversation.</p>}
-              <button className="btn btn-dark">+ Begin a new wedding</button>
-            </form>
+            <div className="glass mt-8 flex flex-col gap-2 rounded-[28px] p-2 sm:flex-row sm:items-center">
+              <p className="flex-1 px-5 py-3 font-display text-lg italic text-muted">Weddings, birthdays, baby showers, anniversaries, greetings — each begins with a conversation.</p>
+              <Link href="/studio/new" className="btn btn-dark text-center">+ Begin a new celebration</Link>
+            </div>
           </Reveal>
         )}
 
@@ -79,7 +57,7 @@ export default async function Studio() {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {rows.map((w, i) => {
                 const th = themeById(w.theme);
-                const [a, b] = coupleNames(w.profile);
+                const [a, b] = nameParts(w.profile);
                 return (
                   <Reveal key={w.id} delay={i * 0.06}>
                     <Link href={`/studio/${w.id}`} style={themeVars(th)} className="group relative block aspect-[4/5] overflow-hidden rounded-[28px] bg-[var(--t-bg)] p-6 text-[var(--t-ink)] shadow-[0_30px_60px_-40px_rgba(74,20,36,.6)] ring-1 ring-[var(--t-gold)]/30 transition duration-700 hover:-translate-y-2 hover:shadow-[0_50px_90px_-40px_rgba(74,20,36,.7)]">
@@ -92,8 +70,9 @@ export default async function Studio() {
                         <div className="text-center">
                           <Motif theme={th} className="mx-auto mb-6 w-28 transition duration-700 group-hover:scale-110" />
                           <p className="display foil text-4xl leading-tight">{w.profile.partner1 ? a : "A new"}</p>
-                          <p className="script text-2xl text-[var(--t-accent)]">&amp;</p>
-                          <p className="display foil text-4xl leading-tight">{w.profile.partner2 ? b : "love story"}</p>
+                          {(b || !w.profile.partner1) && <p className="script text-2xl text-[var(--t-accent)]">{w.profile.partner1 ? "&" : ""}</p>}
+                          {w.profile.partner1 ? !!b && <p className="display foil text-4xl leading-tight">{b}</p> : <p className="display foil text-4xl leading-tight">{OCCASIONS[occasionOf(w.profile)].name.toLowerCase()}</p>}
+                          {w.profile.partner1 && !b && <p className="script mt-1 text-2xl text-[var(--t-accent)]">{occasionLine(w.profile)}</p>}
                         </div>
                         <div className="flex items-center justify-between text-xs opacity-70">
                           <span>{formatDate(w.profile.date) || "A date to dream about"}</span>
@@ -107,7 +86,7 @@ export default async function Studio() {
             </div>
           </section>
         ))}
-        {!weddings.length && <Reveal><p className="mt-16 text-center font-display text-2xl italic text-muted">No weddings here yet — begin the first one above.</p></Reveal>}
+        {!weddings.length && <Reveal><p className="mt-16 text-center font-display text-2xl italic text-muted">Nothing here yet — begin the first celebration above.</p></Reveal>}
       </div>
     </main>
   );

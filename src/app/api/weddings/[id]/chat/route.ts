@@ -2,6 +2,8 @@ import { sql } from "@/lib/db";
 import { converse } from "@/lib/designer";
 import { requireWedding } from "@/lib/guard";
 import { createDoc, getDoc, patchDoc } from "@/lib/docs";
+import { aiEnabled, withoutAI } from "@/lib/ai";
+import { meter } from "@/lib/commerce";
 
 export const maxDuration = 60;
 
@@ -15,7 +17,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const w = g.wedding;
   const doc = await getDoc(id, docId);
   const history = (await sql`SELECT role, content FROM messages WHERE wedding_id = ${id} ORDER BY created_at DESC LIMIT 16`).reverse() as { role: string; content: string }[];
-  const turn = await converse(w.profile, w.step, message, w.theme, history, doc);
+  // Free daily AI allowance, then credits; when both are spent the (free) rule-based designer answers.
+  const metered = aiEnabled() ? await meter(g.user.id, "text").catch(() => true) : true;
+  const run = () => converse(w.profile, w.step, message, w.theme, history, doc);
+  const turn = metered ? await run() : await withoutAI(run);
+  if (!metered) turn.reply += "\n\n(You’ve used today’s free AI conversation — I’ll keep helping in simple mode. Add credits under Billing for the full designer.)";
   const theme = turn.theme ?? w.theme;
   await sql.transaction([
     sql`INSERT INTO messages (wedding_id, role, content) VALUES (${id}, 'user', ${message})`,

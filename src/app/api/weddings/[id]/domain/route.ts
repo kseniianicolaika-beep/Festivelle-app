@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { isAdmin } from "@/lib/admin";
 import { requireOwner } from "@/lib/guard";
 import { addDomain, vercelEnabled } from "@/lib/vercel";
 
@@ -8,6 +9,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if ("error" in g) return g.error;
   const { domain } = await req.json();
   if (typeof domain !== "string" || !/^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/.test(domain)) return Response.json({ error: "That doesn't look like a domain." }, { status: 400 });
+  if (g.wedding.tier !== "luxury" && !isAdmin(g.user)) return Response.json({ error: "Your own domain is part of the top package." }, { status: 402 });
   if (!vercelEnabled()) return Response.json({ error: "Custom domains aren't enabled on this deployment yet." }, { status: 501 });
   try {
     const r = await addDomain(domain);

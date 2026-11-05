@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin";
 import { canEdit } from "@/lib/workspace";
 import { listDocs } from "@/lib/docs";
 import { Studio, type Msg } from "./Studio";
+import { PurchaseBridge } from "./PurchaseBridge";
 import { emailEnabled } from "@/lib/email";
 import { vercelEnabled } from "@/lib/vercel";
 import type { Asset } from "@/lib/upload-client";
@@ -21,6 +22,8 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
     sql`SELECT id, key, name, kind FROM assets WHERE workspace_id = ${wedding.workspace_id} AND kind <> 'logo' ORDER BY (wedding_id = ${id}) DESC NULLS LAST, created_at DESC LIMIT 120` as unknown as Promise<Asset[]>,
   ]);
   return (
+    <>
+    <PurchaseBridge weddingId={id} />
     <Studio
       wedding={wedding}
       initialMessages={messages}
@@ -31,6 +34,7 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
       editable={canEdit(wedding.role)}
       adminView={isAdmin(user) && wedding.owner_id !== user.id}
     />
+    </>
   );
 }
 

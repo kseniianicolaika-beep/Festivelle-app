@@ -6,9 +6,11 @@ import { Heart } from "@/components/fx/Heart";
 import { SignOut } from "./SignOut";
 
 const TABS = [
-  { id: "weddings", href: "/studio", label: "Weddings" },
+  { id: "weddings", href: "/studio", label: "Celebrations" },
   { id: "library", href: "/studio/library", label: "Library" },
   { id: "settings", href: "/studio/settings", label: "Workspace" },
+  { id: "billing", href: "/studio/billing", label: "Billing" },
+  { id: "partners", href: "/partners", label: "Vendors" },
 ] as const;
 
 export function StudioNav({ current, list, email, admin, active }: { current: Workspace; list: Workspace[]; email: string; admin: boolean; active: (typeof TABS)[number]["id"] }) {

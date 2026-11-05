@@ -1,24 +1,97 @@
-# Festivelle — AI wedding builder
+# Festivelle — AI-native invitations, websites, videos & greetings
 
-> The name lives in one place: `src/lib/brand.ts`.
+> The name lives in one place: `src/lib/brand.ts`. (Client brief name: FestiVites → now **Festivelle**.)
 
 | | |
 |---|---|
 | **Live app** | https://wedding-builder-two.vercel.app |
-| **Repository** | https://github.com/Akshay115/Festivelle-app (renamed from `Wedding-builder`; old links redirect) |
+| **Repository** | https://github.com/Akshay115/Festivelle-app |
 | **Hosting** | Vercel project `lyvena/wedding-builder`, auto-deploys from `main` |
 | **Backend** | Neon project `raspy-union-09496702`, branch `production` (Postgres, Auth, Object Storage, Realtime, Functions) |
-| **AI** | OpenRouter, free models only |
+| **AI** | Experiential Labs free models (GPT-6 Luna → DeepSeek V4.1 Flash) → OpenRouter free → rule engine |
+| **Payments** | YooKassa (Russia, RUB) · Razorpay (India INR + international USD) · NOWPayments (crypto, worldwide) |
 | **Support** | Heart concierge → WhatsApp +91 72186 78536 |
 | **Platform owner** | akshay@lyvena.xyz (permanent admin) |
 
-A chat-first, AI wedding designer for **Russian and Indian couples**, made in Goa. The couple talks, and their
-invitation, save-the-date and wedding website (with live RSVPs) design themselves as they answer. Goa is the home
-destination, but the product works for weddings anywhere, in English, Russian and Hindi.
+A conversation-first, romantic platform for ready-made invitation websites, video invitations and digital greetings —
+weddings, engagements, anniversaries, birthdays, children's parties, baby showers and greetings. You talk; the design
+writes itself. **Designing is free**; you pay once only to publish (get your own link) or download.
 
-This repo is **the app only**. There's no marketing landing page here: the public site is built separately, and `/` goes straight to the studio (or sign-in).
+## The customer journey
 
-## What's new: templates, workspaces, agencies
+1. **Choose** an occasion and a template at `/studio/new` (live previews in your own names), or just start talking.
+2. **Personalise for free** — by chat (“move the gallery up”, “make it more royal”, “write it in Russian”) or by hand:
+   names, texts, photos & gallery, dates, venue, colours/themes, fonts/layouts, motifs, and sections
+   (intro, invitation, details, schedule, venue, gallery, RSVP, additional info — add, hide, reorder). Preview on
+   desktop and mobile, drafts save automatically. **No public link exists before payment.**
+3. **Pay once** (Share → choose a package). The site goes live immediately at **`names.festivelle.com`**
+   (Cyrillic names are transliterated: Анна & Марк → `anna-mark`). Upgrades are charged only the difference.
+4. **Hosting window:** up to 12 months from activation, but no later than 30 days after the event — whichever comes
+   first (both numbers are admin-configurable). Optional one-time extensions (3/6/12 months, or Keepsake forever);
+   never auto-renewed. Expired sites show a gentle “this celebration has become a memory” page.
+5. **Video invitations & greetings** (`/studio/[id]/video`): three canvas-rendered templates (Whisper, Golden Hour,
+   Sealed with Love), 9:16 and 16:9, recorded in the browser (MP4/WebM). Watermarked until purchased.
+6. **Digital greetings:** greeting cards with names, photo and message; PNG export is watermarked until purchased.
+
+## Pricing (defaults — every number is editable at `/admin/pricing`)
+
+| Websites | Basic | Premium | Luxury |
+|---|---|---|---|
+| Weddings & engagements | Essential $19 · ₹999 · 1 490 ₽ | Signature $39 · ₹1 999 · 2 990 ₽ | Heirloom $79 · ₹3 999 · 5 990 ₽ |
+| Birthdays, kids, baby showers, anniversaries | Simple $7 · ₹399 · 590 ₽ | Signature $15 · ₹799 · 1 190 ₽ | Grand $29 · ₹1 499 · 2 290 ₽ |
+| Digital greetings | Card $3 | Keepsake $5 | Luxe $9 |
+| Video invitations / greetings | Classic $12 | Cinematic $24 | Heirloom film $39 |
+
+Hosting extensions: 3 mo $9 · 6 mo $15 · 12 mo $25 · Keepsake (forever) $29. AI: 80 free messages/day + 3 free
+illustrations, then credit packs (20 credits $5, 60 credits $12). Why not $3/$5/$7: a once-in-a-lifetime, emotional
+purchase priced like a template signals “cheap” and leaves no margin after payment fees; the low-ticket occasions keep
+an accessible entry point, and regional INR/RUB prices keep it affordable.
+
+## Payments (Russia supported)
+
+Stripe and PayPal don't serve Russian cards, so checkout offers the right acquirer per currency
+(`src/lib/payments.ts`). Every payment is re-verified **server-to-server** before anything unlocks
+(`/api/payments/return`, plus webhooks), and fulfilment is idempotent (`src/lib/commerce.ts`).
+
+| Provider | Currency | Who it's for | Env vars | Webhook URL |
+|---|---|---|---|---|
+| **YooKassa** | RUB | Russian cards, МИР, СБП, SberPay, YooMoney. Requires a Russian ИП/ООО or самозанятый. | `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` (opt. `YOOKASSA_RECEIPTS=1`, `YOOKASSA_VAT_CODE` for 54-ФЗ receipts) | `/api/payments/yookassa` (event `payment.succeeded`) |
+| **Razorpay** | INR, USD | UPI, Indian cards, netbanking, international cards | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | `/api/payments/razorpay` (event `payment_link.paid`) |
+| **NOWPayments** | USD (paid in crypto) | Anyone, incl. Russians abroad | `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET` | `/api/payments/nowpayments` |
+| Test | any | Local development only (`PAYMENTS_TEST_MODE=1`, or admins in dev) | — | — |
+
+Until a provider's keys are set, checkout says payments in that currency open soon. Admins can **comp** a package
+from `/admin`. Alternatives if YooKassa isn't possible: Robokassa or CloudPayments (same adapter shape).
+
+## Admin dashboard (`/admin`)
+
+- **Celebrations** — every site, owner, occasion, package, expiry, RSVPs; comp a package.
+- **Orders & revenue** — per-currency revenue, product mix, partner commission owed, refunds.
+- **Pricing & packages** — every price (USD/INR/RUB), package features & limits, hosting rules and extensions, video
+  tiers, AI allowances/credit costs, partner listing fees. Saved to `settings.pricing`; no deploys needed.
+- **Promo codes** — % off, max uses, expiry, optionally tied to a partner.
+- **Partners** — salons, planners, photographers, videographers, florists, bakeries, shops, online stores: free /
+  featured / sponsored listings (shown at `/partners`), offers, referral link `/r/<code>` (60-day cookie), commission %,
+  agreement notes, clicks and attributed orders.
+
+## Subdomains & SSL
+
+Set `ROOT_DOMAIN=festivelle.com` and `NEXT_PUBLIC_ROOT_DOMAIN=festivelle.com` in Vercel, add the apex and the
+wildcard `*.festivelle.com` to the Vercel project (wildcards need the domain's nameservers on Vercel — Vercel then
+issues SSL for every subdomain automatically). `src/proxy.ts` sends `<sub>.festivelle.com` to the site; Luxury
+customers can also connect their own domain (Vercel Domains API).
+
+## AI (free models)
+
+`src/lib/ai.ts` calls **Experiential Labs** (`EXPLABS_API_KEY`; OpenAI-compatible at `https://api.experientiallabs.ai/v1`)
+with `gpt-6-luna`, then `deepseek-v4.1-flash` — both $0 within the Free plan's shared pool (10 req/min, 250K tokens/min,
+1M tokens/day, resets 00:00 UTC; a refunded $1 card verification unlocks it). On a 429 or outage it falls back to
+OpenRouter free models, then to the rule-based designer, so the chat never breaks. Per-user metering
+(`ai_usage`, `credits`) keeps one user from draining the shared pool. `/api/ai/write` writes invitation texts, wishes
+and greetings (3 options). `/api/ai/visual` generates illustrations when `IMAGE_MODEL` is set (image models are not in
+the free plan). Upgrade to Experiential Labs Pro ($20/mo, 10×) when traffic grows.
+
+## Templates, workspaces, agencies
 
 - **12 wedding pieces**, each designed and editable by chat: wedding website, invitation, save-the-date, event cards (haldi, mehendi, sangeet, ZAGS…), Instagram story / WhatsApp status, square post, welcome sign, order of ceremony, menu, table numbers, photo & hashtag sign, and thank-you card.
 - **Template gallery:** 12 named templates per piece (Ashwem Dusk, Lisbon Letter, Maharani, Neva Monogram, Mogra Bloom, Haldi Sun, Noor Lantern, Starlit Sangeet, Assagao Portrait, Moscow Folk, Mehendi Ambi, Lotus Vows), plus 6 website templates. Every preview uses the couple's own names and date.
@@ -33,20 +106,6 @@ This repo is **the app only**. There's no marketing landing page here: the publi
 - **Export:** PNG at 3× resolution, and a print / save-as-PDF page for every piece.
 - **Mobile-first studio:** chat is the main screen, and the design opens as a swipe-up sheet.
 - **Support concierge:** a beating heart opens a romantic help card that continues privately on WhatsApp (+91 72186 78536) without looking like WhatsApp.
-
-## Pricing (billing switches on later)
-
-| For couples | Price | |
-|---|---|---|
-| Draft | Free | Unlimited AI design, every template |
-| Celebration | ₹4,999 / $79 one-time | Publish, invitations, live RSVPs, all 12 pieces |
-| Heritage | ₹14,999 / $199 one-time | Custom domain, concierge, family collaborators |
-
-| For agencies | Price | |
-|---|---|---|
-| Atelier | ₹7,999 / $99 per month | 3 seats, 10 active weddings, brand kit |
-| Maison | ₹19,999 / $249 per month | 10 seats, unlimited weddings, full white-label, custom domains |
-| Grand Maison | Custom | Unlimited seats, private templates, dedicated concierge |
 
 ## What's built
 
@@ -82,24 +141,6 @@ Declared in `neon.ts` and provisioned with `neon deploy`:
 - **Realtime** powers the live RSVP feed.
 - **Functions**: `functions/calendar.ts` returns an `.ics` file of the wedding's events.
 
-## AI (OpenRouter, free models only)
-
-The app uses **only free OpenRouter models**, so there's no per-message cost. This is enforced in code: `OPENROUTER_MODEL` is ignored unless it ends in `:free`.
-
-| Order | Model | Why |
-|---|---|---|
-| 1 | `nvidia/nemotron-3-ultra-550b-a55b:free` | Best in a side-by-side test (Nov 2026) on a Russian–Punjabi Sikh couple: fluent Russian, correctly named the Anand Karaj ceremony, clean structured output. About 15–20 s per reply. |
-| 2 | `nvidia/nemotron-3.5-super-vl:free` | Strong fallback with good Russian. |
-| 3 | `openrouter/free` | OpenRouter's free auto-router, the last safety net. |
-
-OpenRouter switches to the next model automatically if one is busy or rate-limited (it allows at most 3 per request). If all three fail, the built-in rule-based designer answers, so the chat never breaks.
-
-Also tested: `google/gemma-4-31b-it:free` and `gemma-4-26b` (rate-limited upstream) and `thinkingmachines/inkling:free` (restricted to agent tools).
-
-Setup: put `OPENROUTER_API_KEY` in Vercel and `.env.local`. `/admin` shows whether AI is connected.
-
-Free-tier limits: OpenRouter caps free-model usage per day (the cap is higher once the account has ever bought credits), and free models can be slower or busy at peak times. For heavy production traffic, consider a small credit top-up or a paid model later.
-
 ## Develop
 
 ```bash
@@ -130,10 +171,10 @@ neon realtime enable --allowed-origin https://<domain>
 
 ## Data model
 
-`workspaces`, `members` (workspace × user × role), `invites`, `weddings` (belong to a workspace, with an optional client name), `documents` (one per piece: kind, layout, design JSON), `assets` (workspace library), `messages`, `guests`, `rsvps`. Run `node --env-file=.env.local scripts/migrate.mjs`. It's idempotent and backfills workspaces and starter pieces for older data.
+`settings` (pricing JSON), `orders`, `promos`, `partners`, `credits`, `ai_usage`, `weddings` (+ `tier`, `video_tier`, `activated_at`, `expires_at`, `subdomain`; occasion in `profile.occasion`), `workspaces`, `members` (workspace × user × role), `invites`, `weddings` (belong to a workspace, with an optional client name), `documents` (one per piece: kind, layout, design JSON), `assets` (workspace library), `messages`, `guests`, `rsvps`. Run `node --env-file=.env.local scripts/migrate.mjs`. It's idempotent and backfills workspaces and starter pieces for older data.
 
 ## Roadmap
 
 - **Next:** guest management by household and by event (who's invited to which event), and comments and approvals for clients.
 
-Stripe + Razorpay checkout gating `published`, Resend production domain, streaming AI replies (to hide free-model latency), AI-generated motifs and illustrations, more languages (Konkani, Marathi, Punjabi, Tamil), WhatsApp Business API sending, video invitations, a vendor marketplace, and seating plans.
+Resend production domain, streaming AI replies (to hide free-model latency), AI-generated motifs and illustrations, more languages (Konkani, Marathi, Punjabi, Tamil), WhatsApp Business API sending, server-side MP4 rendering for videos, and seating plans.

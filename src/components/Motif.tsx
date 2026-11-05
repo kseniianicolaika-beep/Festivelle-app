@@ -162,6 +162,88 @@ export function Motif({ theme, motif, className = "" }: { theme: Theme; motif?: 
           <path {...s} d="M-90 0h60M30 0h60" opacity=".6" />
         </g>,
       );
+    case "balloons":
+      return svg(
+        <>
+          {[[78, 20, 9, a], [100, 14, 11, g], [122, 22, 9, a]].map(([x, y, r, c], i) => (
+            <g key={i}>
+              <ellipse {...s} stroke={c as string} cx={x as number} cy={y as number} rx={(r as number) * 0.86} ry={r as number} />
+              <path {...s} stroke={c as string} d={`M${x} ${(y as number) + (r as number)}l-1.5 2.5h3z`} />
+              <path {...s} d={`M${x} ${(y as number) + (r as number) + 2.5}c-3 6 3 10 0 16s${100 - (x as number) > 0 ? 3 : -3} 8 ${(100 - (x as number)) * 0.4} 14`} opacity=".7" />
+              <path {...s} stroke="#fff" d={`M${(x as number) - (r as number) * 0.4} ${(y as number) - (r as number) * 0.4}q2-3 5-3`} opacity=".8" />
+            </g>
+          ))}
+          <path {...s} d="M30 52h40M130 52h40" opacity=".6" />
+        </>,
+      );
+    case "cake":
+      return svg(
+        <>
+          <path {...s} d="M72 56h56M78 56V42h44v14M84 42V32h32v10M90 32V24h20v8" />
+          <path {...s} stroke={a} d="M78 47c4 3 7 3 11 0s7-3 11 0 7 3 11 0 7-3 11 0M84 36c3 2.5 6 2.5 8 0s5-2.5 8 0 5 2.5 8 0 5-2.5 8 0" />
+          <path {...s} d="M100 24v-8" />
+          <path fill={a} d="M100 6c3 4 3 7 0 9-3-2-3-5 0-9z" opacity=".85" />
+          <path {...s} d="M30 50h34M136 50h34" opacity=".55" />
+        </>,
+      );
+    case "moon":
+      return svg(
+        <>
+          <path {...s} d="M108 6a18 18 0 1 0 10 32a14 14 0 1 1-10-32z" stroke={a} />
+          <path {...s} d="M50 46c0-6 8-8 12-4c2-7 14-7 15 1c6-1 9 7 3 9H52c-3 0-4-3-2-6zM128 50c0-5 6-7 10-4c2-5 11-5 12 1c5 0 7 5 2 7h-22c-2 0-3-2-2-4z" />
+          {[[70, 14], [140, 18], [152, 8], [60, 26]].map(([x, y], i) => (
+            <path key={i} {...s} d={`M${x} ${y - 3}v6M${x - 3} ${y}h6`} opacity=".8" />
+          ))}
+        </>,
+      );
+    case "champagne":
+      return svg(
+        <>
+          <g transform="rotate(-12 86 30)">
+            <path {...s} d="M72 14h28c0 10-6 16-14 16s-14-6-14-16zM86 30v18M78 50h16" />
+            <path {...s} stroke={a} d="M74 18h24" opacity=".7" />
+          </g>
+          <g transform="rotate(12 114 30)">
+            <path {...s} d="M100 14h28c0 10-6 16-14 16s-14-6-14-16zM114 30v18M106 50h16" />
+            <path {...s} stroke={a} d="M102 18h24" opacity=".7" />
+          </g>
+          {[[100, 6, 1.6], [94, 2, 1], [106, 3, 1.2], [100, -1, 0.8]].map(([x, y, r], i) => <circle key={i} {...s} cx={x} cy={y + 4} r={r} />)}
+          <path {...s} d="M28 40h36M136 40h36" opacity=".55" />
+        </>,
+      );
+    case "ribbon":
+      return svg(
+        <>
+          <path {...s} d="M100 30c-10-14-30-16-30-6s20 8 30 6zM100 30c10-14 30-16 30-6s-20 8-30 6z" stroke={a} />
+          <path {...s} d="M100 30c-6 8-12 18-20 26M100 30c6 8 12 18 20 26" stroke={a} />
+          <circle {...s} cx="100" cy="30" r="3.5" />
+          <path {...s} d="M20 30c20-6 30 6 46 0M134 30c16 6 26-6 46 0" opacity=".6" />
+        </>,
+      );
+    case "rattle":
+      return svg(
+        <>
+          <circle {...s} cx="92" cy="22" r="12" stroke={a} />
+          <path {...s} d="M84 16c4-3 12-3 16 0M82 25c6 3 14 3 20 0" opacity=".7" />
+          <path {...s} d="M100 31l14 16" />
+          <circle {...s} cx="117" cy="50" r="4" />
+          {[[60, 18], [140, 14], [132, 40], [66, 44]].map(([x, y], i) => (
+            <path key={i} {...s} d={`M${x} ${y - 4}l1.2 2.8 2.8 1.2-2.8 1.2-1.2 2.8-1.2-2.8-2.8-1.2 2.8-1.2z`} />
+          ))}
+        </>,
+      );
+    case "confetti":
+      return svg(
+        <>
+          {Array.from({ length: 16 }, (_, i) => {
+            const x = 30 + ((i * 47) % 140);
+            const y = 8 + ((i * 29) % 44);
+            const c = i % 3 === 0 ? a : g;
+            return i % 2 ? <path key={i} {...s} stroke={c} d={`M${x} ${y}q3-4 6 0t6 0`} /> : <rect key={i} x={x} y={y} width="4" height="2" rx="1" fill={c} transform={`rotate(${i * 37} ${x} ${y})`} />;
+          })}
+          <path {...s} d="M60 56L82 34M140 56L118 34" opacity=".5" />
+        </>,
+      );
     default:
       return svg(
         <>
