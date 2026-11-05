@@ -21,6 +21,8 @@ import { assetUrl, uploadAsset, type Asset } from "@/lib/upload-client";
 import { SendPanel } from "./SendPanel";
 import { openSupport } from "@/components/SupportHeart";
 import { Gallery, type Pick } from "./Gallery";
+import { EditorShell } from "./editor/EditorShell";
+import { pathLabel } from "@/lib/editor-options";
 
 // Stamps a soft, diagonal "Festivelle preview" mark across an exported image.
 async function watermark(src: string) {
@@ -39,7 +41,7 @@ async function watermark(src: string) {
   return c.toDataURL("image/png");
 }
 
-export type Msg = { id: string; role: "user" | "assistant"; content: string; chips: string[] };
+export type Msg = { id: string; role: "user" | "assistant"; content: string; chips: string[]; kind?: string };
 const ease = [0.2, 0.7, 0.2, 1] as const;
 const json = (method: string, body: unknown) => ({ method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
@@ -75,11 +77,14 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
   const [gallery, setGallery] = useState<null | { mode: "add" | "restyle" }>(null);
   const [picker, setPicker] = useState<null | "motif" | "photo" | "sections">(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(editable);
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const pieceRef = useRef<HTMLDivElement>(null);
   const doc = docs.find((d) => d.id === activeId) ?? docs[0];
   const theme = themeById(doc?.design.theme ?? themeId);
-  const last = messages[messages.length - 1];
+  const last = [...messages].reverse().find((m) => m.kind !== "edit");
   const multiSelect = last?.role === "assistant" && /(tap any|select all|all that apply|which celebrations|какие события)/i.test(last.content);
   const occ = occasionOf(profile);
   const names = displayNames(profile);
@@ -107,7 +112,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
     setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", content: text, chips: [] }]);
     setThinking(true);
     try {
-      const res = await fetch(`/api/weddings/${wedding.id}/chat`, json("POST", { message: text, docId: doc?.id }));
+      const res = await fetch(`/api/weddings/${wedding.id}/chat`, json("POST", { message: text, docId: doc?.id, selectedPath: editMode ? selectedPath ?? undefined : undefined }));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setProfile(data.profile);
@@ -137,7 +142,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
     const mode = gallery?.mode;
     setGallery(null);
     if (mode === "restyle" && doc) {
-      await patchDoc({ layout: p.layout, theme: p.theme, motif: p.motif ?? null });
+      await patchDoc({ layout: p.layout, theme: p.theme, motif: p.motif ?? null, ...(p.fonts ? { fonts: p.fonts } : {}), ...(p.template ? { template: p.template } : {}) });
       return say(`Restyled in ${themeById(p.theme).name}. Tell me anything you'd like refined — wording, motif, size, colours.`);
     }
     const r = await fetch(`/api/weddings/${wedding.id}/documents`, json("POST", p));
@@ -206,11 +211,11 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
             </div>
           ) : (
             // Fit the whole piece in view: width is limited by the available height × the piece's aspect ratio.
-            <Tilt className="shrink-0">
+            <MaybeTilt on={!editMode}>
               <div style={{ width: `min(${KINDS[doc.kind].ratio === "7/5" ? 560 : 430}px, calc(100vw - 40px), calc((100dvh - 330px) * ${KINDS[doc.kind].ratio}))` }}>
               <div data-piece><PieceView doc={doc} profile={profile} suiteTheme={themeId} /></div>
               </div>
-            </Tilt>
+            </MaybeTilt>
           )}
         </motion.div>
       </AnimatePresence>
@@ -243,7 +248,9 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
         <section className="glass flex w-full flex-col overflow-hidden md:w-[400px] md:rounded-[30px] lg:w-[450px]">
           <div ref={scroller} className="scroll-soft flex-1 space-y-5 overflow-y-auto px-5 py-6 md:px-6">
             <AnimatePresence initial={false}>
-              {messages.map((m) => (
+              {messages.map((m) => m.kind === "edit" ? (
+                <motion.p key={m.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-[11.5px] italic text-muted/80">{m.content}</motion.p>
+              ) : (
                 <motion.div key={m.id} initial={{ opacity: 0, y: 14, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.55, ease }} className={`flex ${m.role === "user" ? "justify-end" : "gap-3"}`}>
                   {m.role === "assistant" && <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f3c9cf] to-[#f1dcb3] text-[11px] text-wine shadow-sm">✦</span>}
                   <div className={m.role === "user" ? "max-w-[82%] rounded-[22px] rounded-br-md bg-gradient-to-br from-[#5a1a2e] to-[#2a1a1f] px-4 py-2.5 text-[15px] text-[#fff6f0] shadow-[0_10px_24px_-14px_rgba(74,20,36,.8)]" : "max-w-[88%] whitespace-pre-line pt-0.5 font-display text-[1.18rem] leading-[1.5] text-ink"}>
@@ -283,7 +290,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
                 <button type="button" onClick={() => setGallery({ mode: "add" })} className="rounded-full p-2.5 text-muted transition hover:bg-blush hover:text-wine" title="Templates" aria-label="Templates">
                   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></svg>
                 </button>
-                <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Tell me anything — in any language…" className="min-w-0 flex-1 bg-transparent px-1.5 py-2 text-[16px] outline-none placeholder:text-muted/70 md:text-[15px]" />
+                <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder={editMode && selectedPath ? `Ask about the ${pathLabel(selectedPath)} — “make it warmer”…` : "Tell me anything — in any language…"} className="min-w-0 flex-1 bg-transparent px-1.5 py-2 text-[16px] outline-none placeholder:text-muted/70 md:text-[15px]" />
                 <motion.button whileTap={{ scale: 0.9 }} disabled={!input.trim() || thinking} className="rounded-full bg-gradient-to-br from-[#5a1a2e] to-[#2a1a1f] p-2.5 text-[#fff6f0] transition disabled:opacity-25" aria-label="Send">
                   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                 </motion.button>
@@ -322,6 +329,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
           {/* toolbar */}
           {editable && doc && (
             <div className="scroll-soft relative z-20 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:flex-wrap md:px-5">
+              <button onClick={() => { setEditMode((v) => !v); setSelectedPath(null); }} className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] ${editMode ? "bg-wine text-white shadow-md" : "glass"}`} title="Edit directly on the preview">✎ {editMode ? "Editing" : "Edit on preview"}</button>
               <button onClick={() => setGallery({ mode: "restyle" })} className="glass shrink-0 rounded-full px-3.5 py-1.5 text-[13px]">✦ Templates</button>
               <div className="glass flex shrink-0 rounded-full p-1 text-[12.5px]">
                 {Object.entries(layouts).map(([k, l]) => (
@@ -416,7 +424,26 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
             )}
           </AnimatePresence>
 
-          <div className="scroll-soft relative z-10 flex flex-1 overflow-y-auto p-5 md:p-6">{Canvas}</div>
+          {doc ? (
+            <EditorShell
+              weddingId={wedding.id}
+              doc={doc}
+              profile={profile}
+              luxury={wedding.tier === "luxury" || !!adminView}
+              enabled={editable && editMode}
+              selected={selectedPath}
+              onSelect={setSelectedPath}
+              onDoc={replaceDoc}
+              onProfile={(p) => setProfile((x) => ({ ...x, ...p }))}
+              onMessage={(m) => setMessages((all) => [...all, { ...m, chips: m.chips ?? [] }])}
+              onPhotoSlot={() => setPicker("photo")}
+              onAsk={() => { setSheet(false); setTimeout(() => inputRef.current?.focus(), 350); }}
+            >
+              <div className="scroll-soft relative z-10 flex flex-1 overflow-y-auto p-5 md:p-6">{Canvas}</div>
+            </EditorShell>
+          ) : (
+            <div className="scroll-soft relative z-10 flex flex-1 overflow-y-auto p-5 md:p-6">{Canvas}</div>
+          )}
           <p className="relative z-10 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center font-display text-sm italic text-muted">{doc && KINDS[doc.kind].name} · {theme.name} — {theme.mood}</p>
         </section>
       </div>
@@ -428,4 +455,8 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
       </AnimatePresence>
     </div>
   );
+}
+
+function MaybeTilt({ on, children }: { on: boolean; children: React.ReactNode }) {
+  return on ? <Tilt className="shrink-0">{children}</Tilt> : <div className="shrink-0">{children}</div>;
 }

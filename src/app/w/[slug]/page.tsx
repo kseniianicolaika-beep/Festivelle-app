@@ -10,8 +10,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: displayNames(w.profile), description: [formatDate(w.profile.date, w.profile.language), w.profile.venue || w.profile.city].filter(Boolean).join(" · "), robots: { index: false } };
 }
 
-export default async function Site({ params }: { params: Promise<{ slug: string }> }) {
-  return <SiteBySlug slug={(await params).slug} />;
+export default async function Site({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ g?: string }> }) {
+  return <SiteBySlug slug={(await params).slug} g={(await searchParams).g} />;
 }
 
 

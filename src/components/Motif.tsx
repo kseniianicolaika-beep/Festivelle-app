@@ -244,6 +244,101 @@ export function Motif({ theme, motif, className = "" }: { theme: Theme; motif?: 
           <path {...s} d="M60 56L82 34M140 56L118 34" opacity=".5" />
         </>,
       );
+    case "fan":
+      return svg(
+        <>
+          <path {...s} d="M30 56h140" />
+          {Array.from({ length: 13 }, (_, i) => {
+            const r = (-90 + (i - 6) * 13) * (Math.PI / 180);
+            return <path key={i} {...s} d={`M100 56L${(100 + Math.cos(r) * 46).toFixed(1)} ${(56 + Math.sin(r) * 46).toFixed(1)}`} opacity={i % 2 ? 0.55 : 1} />;
+          })}
+          <path {...s} d="M54 56a46 46 0 0 1 92 0M66 56a34 34 0 0 1 68 0M80 56a20 20 0 0 1 40 0" />
+          <path {...s} stroke={a} d="M20 50l8-6 8 6M164 50l8-6 8 6" />
+        </>,
+      );
+    case "henna":
+      return svg(
+        <>
+          <path {...s} d="M10 32c20-18 40 18 60 0s40-18 60 0 40 18 60 0" />
+          {[30, 70, 110, 150].map((x, i) => (
+            <g key={x} transform={`translate(${x} ${i % 2 ? 40 : 22})`}>
+              <path {...s} d="M0 0c-6-6-6-14 0-18c6 4 6 12 0 18z" />
+              <path {...s} stroke={a} d="M0-3v-10" />
+              <circle cx="0" cy="4" r="1.4" fill={g} />
+            </g>
+          ))}
+          {[50, 90, 130, 170].map((x) => <circle key={x} cx={x} cy={31} r="1.2" fill={a} />)}
+        </>,
+      );
+    case "snowflake":
+      return svg(
+        <>
+          {[[100, 30, 18], [55, 24, 9], [145, 24, 9], [30, 40, 6], [170, 40, 6]].map(([x, y, r], i) => (
+            <g key={i} transform={`translate(${x} ${y})`}>
+              {[0, 60, 120].map((d) => <path key={d} {...s} d={`M0 ${-r}V${r}M${-r * 0.3} ${-r * 0.7}L0 ${-r * 0.45}L${r * 0.3} ${-r * 0.7}M${-r * 0.3} ${r * 0.7}L0 ${r * 0.45}L${r * 0.3} ${r * 0.7}`} transform={`rotate(${d})`} />)}
+            </g>
+          ))}
+        </>,
+      );
+    case "diya":
+      return svg(
+        <>
+          {[60, 100, 140].map((x, i) => (
+            <g key={x} transform={`translate(${x} ${i === 1 ? 34 : 40})`}>
+              <path {...s} d="M-16 4c4 10 28 10 32 0z" />
+              <path {...s} d="M-16 4h32" opacity=".6" />
+              <path fill={a} opacity=".85" d="M0 2c-4-5-3-11 0-16c3 5 4 11 0 16z" />
+              <path fill={g} d="M0 0c-1.6-2.5-1.2-5.5 0-8c1.2 2.5 1.6 5.5 0 8z" />
+            </g>
+          ))}
+          <path {...s} d="M20 54h50M130 54h50" opacity=".5" />
+        </>,
+      );
+    case "crescent":
+      return svg(
+        <>
+          <path {...s} d="M108 10a22 22 0 1 0 0 40a17 17 0 1 1 0-40z" />
+          <path fill={g} d="M124 22l2.2 5 5.4.4-4.1 3.5 1.3 5.3-4.8-2.9-4.8 2.9 1.3-5.3-4.1-3.5 5.4-.4z" />
+          <path {...s} d="M30 30h45M140 30h30" />
+          {[40, 55, 160].map((x) => <path key={x} {...s} stroke={a} d={`M${x} 18v8m-3 4a3 3 0 0 0 6 0c0-4-3-6-3-6s-3 2-3 6z`} />)}
+        </>,
+      );
+    case "sun":
+      return svg(
+        <>
+          <circle {...s} cx="100" cy="30" r="12" />
+          <circle {...s} stroke={a} cx="100" cy="30" r="7" />
+          {Array.from({ length: 16 }, (_, i) => (
+            <path key={i} {...s} stroke={i % 2 ? a : g} d={i % 2 ? "M100 13l-2.5-5h5z" : "M100 14c-3-4-3-8 0-10c3 2 3 6 0 10z"} transform={`rotate(${i * 22.5} 100 30)`} />
+          ))}
+          <path {...s} d="M20 30c10-6 20 6 30 0s20 6 30 0M120 30c10-6 20 6 30 0s20 6 30 0" opacity=".7" />
+        </>,
+      );
+    case "eucalyptus":
+      return svg(
+        <>
+          <path {...s} d="M18 46C60 40 120 22 182 14" />
+          {Array.from({ length: 9 }, (_, i) => {
+            const x = 32 + i * 17;
+            const y = 44 - i * 3.4;
+            return (
+              <g key={i}>
+                <ellipse {...s} cx={x} cy={y - 7} rx="5.5" ry="4.2" />
+                <ellipse {...s} stroke={i % 2 ? a : g} cx={x + 6} cy={y + 6} rx="5" ry="3.8" opacity=".8" />
+              </g>
+            );
+          })}
+        </>,
+      );
+    case "shell":
+      return svg(
+        <>
+          <path {...s} d="M84 44c0-18 8-28 16-28s16 10 16 28z" />
+          {[-10, -5, 0, 5, 10].map((d) => <path key={d} {...s} d={`M100 44L${100 + d * 1.4} 18`} opacity=".7" />)}
+          <path {...s} d="M80 44h40" />
+          <path {...s} stroke={a} d="M10 52c10-6 20 6 30 0s20 6 30 0M130 52c10-6 20 6 30 0s20 6 30 0" />
+        </>,
+      );
     default:
       return svg(
         <>

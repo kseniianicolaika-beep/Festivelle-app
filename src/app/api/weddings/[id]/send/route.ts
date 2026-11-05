@@ -2,7 +2,7 @@ import { sql } from "@/lib/db";
 import { appUrl, requireOwner } from "@/lib/guard";
 import { emailEnabled, inviteHtml, sendEmail } from "@/lib/email";
 import { displayNames } from "@/lib/occasions";
-import { siteUrl } from "@/lib/commerce";
+import { guestLink, upsertGuest } from "../../../guests/_lib";
 import { themeById } from "@/lib/themes";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -15,13 +15,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const valid = (guests ?? []).filter((x) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x.email)).slice(0, 500);
   if (!valid.length) return Response.json({ error: "No valid email addresses found." }, { status: 400 });
 
-  const url = siteUrl(w, appUrl(req));
+  const origin = appUrl(req);
   const names = displayNames(w.profile);
   const theme = themeById(w.theme);
   let sent = 0;
   const failed: string[] = [];
   for (const guest of valid) {
     let status = "saved";
+    // Every guest gets a personal link (greets them by name, shows their events, pre-fills the RSVP).
+    const row = await upsertGuest(id, { name: guest.name.slice(0, 120) || guest.email.split("@")[0], email: guest.email.toLowerCase() });
+    const url = guestLink(w, origin, row.token!);
     if (emailEnabled()) {
       try {
         await sendEmail(guest.email, `${names} — you're invited`, inviteHtml(w.profile, theme, url, guest.name));
@@ -32,8 +35,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         failed.push(guest.email);
       }
     }
-    await sql`INSERT INTO guests (wedding_id, name, email, status, sent_at) VALUES (${id}, ${guest.name}, ${guest.email.toLowerCase()}, ${status}, ${status === "sent" ? new Date().toISOString() : null})
-      ON CONFLICT (wedding_id, email) DO UPDATE SET name = EXCLUDED.name, status = EXCLUDED.status, sent_at = COALESCE(EXCLUDED.sent_at, guests.sent_at)`;
+    await sql`UPDATE guests SET status = CASE WHEN status IN ('attending','declined') THEN status ELSE ${status} END,
+      sent_at = COALESCE(${status === "sent" ? new Date().toISOString() : null}::timestamptz, sent_at) WHERE id = ${row.id}`;
   }
   const message = emailEnabled()
     ? `Sent ${sent} invitation${sent === 1 ? "" : "s"}.${failed.length ? ` Couldn't reach: ${failed.join(", ")}` : ""}`

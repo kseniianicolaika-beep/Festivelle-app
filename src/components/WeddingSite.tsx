@@ -2,7 +2,9 @@ import type { Profile } from "@/lib/profile";
 import { formatDate } from "@/lib/profile";
 import { t } from "@/lib/i18n";
 import type { Theme } from "@/lib/themes";
-import { petalColors, themeVars } from "@/lib/themes";
+import { designVars, petalColors } from "@/lib/themes";
+import { E } from "./designs/Editable";
+import { SITE_BODY, SITE_DEFAULT_ORDER, SITE_HEROES } from "./site/heroes";
 import { nameParts, occasionInvite, occasionLine, occasionOf } from "@/lib/occasions";
 import { sectionLayout, type Design, type SectionId } from "@/lib/templates";
 import { Motif } from "./Motif";
@@ -36,7 +38,7 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
   const editorial = layout === "editorial";
   const arch = layout === "arch";
   const occ = occasionOf(profile);
-  const { order, hidden } = sectionLayout(design?.sections);
+  const { order, hidden } = sectionLayout(design?.sections?.order?.length ? design.sections : { ...design?.sections, order: (SITE_DEFAULT_ORDER[layout] ?? []) as SectionId[] });
   const gallery = design?.gallery ?? [];
   const info = design?.texts?.body;
   const where = profile.venue || profile.city;
@@ -48,7 +50,7 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
       <section className={`relative mx-auto max-w-2xl py-20 text-center ${pad}`}>
         <Reveal>
           <Motif theme={theme} motif={motif} className="draw mx-auto mb-8 w-32 opacity-80" />
-          <p className="display text-[1.6rem] leading-[1.5] md:text-[2rem]">{profile.inviteLine || occasionInvite(profile)}</p>
+          <E as="p" multiline path="profile.inviteLine" className="display block text-[1.6rem] leading-[1.5] md:text-[2rem]">{profile.inviteLine || occasionInvite(profile)}</E>
         </Reveal>
       </section>
     ),
@@ -57,7 +59,7 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
         <Reveal>
           {eyebrow(occ === "greeting" ? L.with : L.story)}
           <p className="script mb-2 text-6xl leading-none text-[var(--t-accent)] opacity-60">“</p>
-          <p className="display whitespace-pre-line text-[1.7rem] leading-[1.5] md:text-[2.2rem]">{profile.story}</p>
+          <E as="p" multiline path="profile.story" className="display block whitespace-pre-line text-[1.7rem] leading-[1.5] md:text-[2.2rem]">{profile.story}</E>
         </Reveal>
       </section>
     ),
@@ -110,7 +112,7 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
       <section className={`relative mx-auto max-w-2xl py-16 text-center ${pad}`}>
         <Reveal>
           {eyebrow(L.venue)}
-          <p className="display text-4xl">{profile.venue || profile.city}</p>
+          <E as="p" path={profile.venue ? "profile.venue" : "profile.city"} className="display block text-4xl">{profile.venue || profile.city}</E>
           {profile.venue && profile.city && <p className="mt-2 text-[var(--t-muted)]">{profile.city}</p>}
           <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([profile.venue, profile.city].filter(Boolean).join(", "))}`} className="mt-6 inline-flex items-center gap-2 rounded-full border border-[var(--t-gold)]/60 px-5 py-2.5 text-sm transition hover:bg-[var(--t-gold)]/10">→ {L.directions}</a>
           {/goa/i.test(profile.city ?? profile.venue ?? "") && (
@@ -129,7 +131,7 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
           {gallery.map((k, i) => (
             <Reveal key={k} delay={(i % 6) * 0.06} className="mb-3 break-inside-avoid">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={media(k)} alt="" loading="lazy" className="w-full rounded-2xl object-cover ring-1 ring-[var(--t-gold)]/20 transition duration-700 hover:scale-[1.02]" />
+              <img data-edit-photo="gallery" data-gallery-key={k} src={media(k)} alt="" loading="lazy" className="w-full rounded-2xl object-cover ring-1 ring-[var(--t-gold)]/20 transition duration-700 hover:scale-[1.02]" />
             </Reveal>
           ))}
         </div>
@@ -146,22 +148,36 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
       <section className={`relative mx-auto max-w-2xl py-16 text-center ${pad}`}>
         <Reveal>
           {eyebrow(L.info)}
-          <p className="whitespace-pre-line text-lg leading-relaxed text-[var(--t-muted)]">{info}</p>
+          <E as="p" multiline path="texts.body" className="block whitespace-pre-line text-lg leading-relaxed text-[var(--t-muted)]">{info}</E>
         </Reveal>
       </section>
     ),
   };
 
   return (
-    <div lang={profile.language ?? "en"} style={themeVars(theme)} className="relative overflow-hidden bg-[var(--t-bg)] text-[var(--t-ink)] transition-colors duration-1000">
+    <div lang={profile.language ?? "en"} style={designVars(theme, design)} className="tbody relative overflow-hidden bg-[var(--t-bg)] text-[var(--t-ink)] transition-colors duration-1000">
       <Petals count={compact ? 10 : 22} colors={petalColors(theme)} className={compact ? "absolute" : "fixed"} />
 
       {/* Intro (hero) — always first */}
+      {SITE_HEROES[layout] ? SITE_HEROES[layout]({
+        compact, theme, hasPhoto: !!heroUrl,
+        initials: b ? `${a[0]}&${b[0]}` : a[0],
+        names: <><E path="profile.partner1">{a}</E>{b && <><span className="script mx-3 text-[0.55em] text-[var(--t-accent)]">&amp;</span><E path="profile.partner2">{b}</E></>}</>,
+        line: occasionLine(profile),
+        date: profile.date ? formatDate(profile.date, profile.language) : null,
+        where: where && occ !== "greeting" ? <E path={profile.venue ? "profile.venue" : "profile.city"}>{where}</E> : null,
+        countdown: profile.date && occ !== "greeting" ? <Countdown date={profile.date} label={L.until} /> : null,
+        motif: (cls) => <Motif key={theme.id + (motif ?? "")} theme={theme} motif={motif} className={cls} />,
+        photo: (cls) => heroUrl
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img data-edit-photo="hero" src={heroUrl} alt="" className={cls} />
+          : <div data-edit-photo="hero" className={`flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_50%_45%,color-mix(in_oklab,var(--t-accent)_26%,var(--t-surface)),var(--t-surface))]`}><Motif theme={theme} motif={motif} className="draw w-2/3 opacity-80" /></div>,
+      }) : (
       <header className={`relative flex flex-col items-center justify-center overflow-hidden text-center ${compact ? "min-h-[520px] py-16" : "min-h-[100dvh] py-24"} ${pad}`}>
         {heroUrl ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={heroUrl} alt="" className="absolute inset-0 h-full w-full scale-105 object-cover [animation:kenburns_24s_ease-in-out_infinite_alternate]" />
+            <img data-edit-photo="hero" src={heroUrl} alt="" className="absolute inset-0 h-full w-full scale-105 object-cover [animation:kenburns_24s_ease-in-out_infinite_alternate]" />
             <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-[var(--t-bg)]" />
           </>
         ) : (
@@ -174,11 +190,11 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
             <Motif key={theme.id + (motif ?? "")} theme={theme} motif={motif} className={`draw mb-10 w-52 ${editorial ? "" : "mx-auto"}`} />
             {(occ === "baby_shower" || occ === "greeting") && <p className="eyebrow rise mb-6 opacity-80">{occasionLine(profile)}</p>}
             <h1 className={`display rise rise-2 ${compact ? "text-5xl" : editorial ? "text-[4.2rem] md:text-[7rem]" : "text-[4.2rem] md:text-[8.5rem]"} leading-[0.92]`}>
-              <span className={heroUrl ? "" : "foil"}>{a}</span>
+              <E path="profile.partner1" className={heroUrl ? "" : "foil"}>{a}</E>
               {b && (
                 <>
                   <span className={`script mx-3 block text-[0.55em] text-[var(--t-accent)] ${editorial ? "" : "md:inline"}`}>&amp;</span>
-                  <span className={heroUrl ? "" : "foil"}>{b}</span>
+                  <E path="profile.partner2" className={heroUrl ? "" : "foil"}>{b}</E>
                 </>
               )}
             </h1>
@@ -206,12 +222,13 @@ export function WeddingSite({ profile, theme, heroUrl, calendarUrl, children, co
           </div>
         )}
       </header>
+      )}
 
-      {order.filter((id) => !hidden.has(id)).map((id) => sections[id] ? <div key={id} data-section={id}>{sections[id]}</div> : null)}
+      {<div className={SITE_BODY[layout] ?? ""}>{order.filter((id) => !hidden.has(id)).map((id) => sections[id] ? <div key={id} data-section={id} data-edit-section={id}>{sections[id]}</div> : null)}</div>}
 
       <footer className="relative pb-16 pt-6 text-center">
         <Reveal>
-          {profile.blessing && <p className="script mb-4 text-3xl text-[var(--t-accent)]">{profile.blessing}</p>}
+          {profile.blessing && <E as="p" path="profile.blessing" className="script mb-4 block text-3xl text-[var(--t-accent)]">{profile.blessing}</E>}
           <p className="display text-2xl"><span className="foil">{a[0]}</span>{b && <> <span className="script text-[var(--t-accent)]">&amp;</span> <span className="foil">{b[0]}</span></>}</p>
           {occ === "wedding" && <p className="eyebrow mt-3 text-[var(--t-muted)]">{L.forever}</p>}
           {credit && <div className="mt-10 text-[11px] tracking-wide text-[var(--t-muted)] opacity-80">{credit}</div>}

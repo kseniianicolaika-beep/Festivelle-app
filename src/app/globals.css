@@ -33,8 +33,9 @@ html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 body { background: var(--ivory); color: var(--ink); font-family: var(--font-inter), system-ui, sans-serif; }
 ::selection { background: var(--blush); color: var(--wine); }
 
-.display { font-family: var(--font-cormorant), var(--font-deva), Georgia, serif; font-weight: 400; letter-spacing: -0.015em; }
-.script { font-family: var(--font-script), var(--font-cormorant), cursive; }
+.display { font-family: var(--f-display, var(--font-cormorant)), var(--font-deva), Georgia, serif; font-weight: 400; letter-spacing: -0.015em; }
+.script { font-family: var(--f-script, var(--font-script)), var(--font-cormorant), cursive; }
+.tbody { font-family: var(--f-body, var(--font-inter)), system-ui, sans-serif; }
 .eyebrow { font-size: 10.5px; letter-spacing: 0.32em; text-transform: uppercase; }
 :lang(hi) .display, .deva { font-family: var(--font-deva), var(--font-cormorant), serif; }
 
@@ -90,6 +91,30 @@ body { background: var(--ivory); color: var(--ink); font-family: var(--font-inte
 
 .scroll-soft { scrollbar-width: thin; scrollbar-color: rgba(192,108,120,.25) transparent; }
 }
+
+/* ── Template surfaces & signature reveals ── */
+.paper-tex { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .42 0 0 0 0 .35 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E"); }
+.deboss { color: color-mix(in oklab, var(--t-surface) 82%, var(--t-ink)); text-shadow: 0 1px 0 rgba(255,255,255,.7), 0 -1px 1px rgba(0,0,0,.18); }
+.wash { filter: blur(18px) saturate(1.2); opacity: .55; border-radius: 46% 54% 60% 40% / 50% 40% 60% 50%; }
+.lace-edge { --s: 5cqw; -webkit-mask: radial-gradient(calc(var(--s) * .55) at 50% calc(var(--s) * .55), #000 98%, #0000) 50% 0 / var(--s) 51% repeat-x, conic-gradient(#000 0 0) 0 calc(var(--s) * .5) / 100% calc(100% - var(--s)) no-repeat, radial-gradient(calc(var(--s) * .55) at 50% calc(100% - var(--s) * .55), #000 98%, #0000) 50% 100% / var(--s) 51% repeat-x; }
+@keyframes curtain-l { from { transform: translateX(0) } to { transform: translateX(-101%) } }
+@keyframes curtain-r { from { transform: translateX(0) } to { transform: translateX(101%) } }
+.curtain-l { animation: curtain-l 1.6s cubic-bezier(.7,0,.2,1) .3s both; }
+.curtain-r { animation: curtain-r 1.6s cubic-bezier(.7,0,.2,1) .3s both; }
+@keyframes letterbox { from { height: 50% } to { height: 7% } }
+.letterbox { animation: letterbox 1.8s cubic-bezier(.7,0,.2,1) .2s both; }
+@keyframes unfold { from { transform: perspective(1200px) rotateX(-70deg); opacity: 0; transform-origin: top; } to { transform: perspective(1200px) rotateX(0); opacity: 1; transform-origin: top; } }
+.unfold { animation: unfold 1.4s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes iris { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(75% at 50% 50%); } }
+.iris { animation: iris 1.8s cubic-bezier(.6,.05,.2,1) both; }
+@keyframes float-up { 0% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-14px) rotate(3deg); } 100% { transform: translateY(0) rotate(-3deg); } }
+.float { animation: float-up 6s ease-in-out infinite; }
+@keyframes pop { 0% { transform: scale(.4); opacity: 0 } 70% { transform: scale(1.08); opacity: 1 } 100% { transform: scale(1) } }
+.pop { animation: pop .9s cubic-bezier(.2,.9,.3,1.3) both; }
+@keyframes ink { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.ink { animation: ink 2.2s cubic-bezier(.6,.1,.2,1) .4s both; }
+@keyframes shimmer-sweep { from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(220%) skewX(-18deg); } }
+.sweep::after { content: ""; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,240,200,.35), transparent); animation: shimmer-sweep 3.5s ease-in-out 1s infinite; pointer-events: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

@@ -4,7 +4,7 @@ import { rootDomain } from "@/lib/commerce";
 import { SiteBySlug } from "../../w/[slug]/SiteBySlug";
 
 // proxy.ts rewrites personal subdomains (anna-mark.festivelle.com) and couples' own domains here.
-export default async function DomainSite({ params }: { params: Promise<{ host: string }> }) {
+export default async function DomainSite({ params, searchParams }: { params: Promise<{ host: string }>; searchParams: Promise<{ g?: string }> }) {
   const host = decodeURIComponent((await params).host).toLowerCase().replace(/:\d+$/, "").replace(/^www\./, "");
   const root = rootDomain();
   const sub = root && host.endsWith(`.${root}`) ? host.slice(0, -root.length - 1) : null;
@@ -12,7 +12,7 @@ export default async function DomainSite({ params }: { params: Promise<{ host: s
     ? await sql`SELECT slug FROM weddings WHERE subdomain = ${sub}`
     : await sql`SELECT slug FROM weddings WHERE custom_domain = ${host}`) as { slug: string }[];
   if (!rows[0]) notFound();
-  return <SiteBySlug slug={rows[0].slug} />;
+  return <SiteBySlug slug={rows[0].slug} g={(await searchParams).g} />;
 }
 
 export const instant = false;

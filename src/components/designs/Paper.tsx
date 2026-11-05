@@ -3,7 +3,9 @@ import { formatDate } from "@/lib/profile";
 import { nameParts, occasionInvite, occasionLine, occasionOf } from "@/lib/occasions";
 import { t } from "@/lib/i18n";
 import type { Theme } from "@/lib/themes";
-import { themeVars } from "@/lib/themes";
+import { designVars } from "@/lib/themes";
+import { E } from "./Editable";
+import { CARD_LAYOUTS } from "./layouts/cards";
 import { INVOCATIONS } from "@/lib/motifs";
 import { KINDS, type Design, type Kind } from "@/lib/templates";
 import { Motif } from "../Motif";
@@ -68,17 +70,17 @@ export function Paper({ kind, layout, design, profile, theme, photoUrl, animate 
 
   const names = (size = nameSize) => (
     <div className={left ? "text-left" : "text-center"}>
-      <h2 className="display foil leading-[1.02]" style={{ fontSize: `${size}cqw` }}>{a}</h2>
-      <p className="script leading-none text-[var(--t-accent)]" style={{ fontSize: `${size * 0.7}cqw`, margin: `${size * 0.08}cqw 0` }}>&amp;</p>
-      <h2 className="display foil leading-[1.02]" style={{ fontSize: `${size}cqw` }}>{b}</h2>
+      <E as="h2" path="profile.partner1" className="display foil block leading-[1.02]" style={{ fontSize: `${size}cqw` }}>{a}</E>
+      {b && <p className="script leading-none text-[var(--t-accent)]" style={{ fontSize: `${size * 0.7}cqw`, margin: `${size * 0.08}cqw 0` }}>&amp;</p>}
+      <E as="h2" path="profile.partner2" className="display foil block leading-[1.02]" style={{ fontSize: `${size}cqw` }}>{b}</E>
     </div>
   );
 
   const body = (
     <div className={`relative flex flex-col ${left ? "items-start text-left" : "items-center text-center"}`} style={{ gap: "2.2cqw" }}>
       {inv && <p className={design.invocation === "bismillah" ? "font-[var(--font-arabic)]" : "deva"} style={{ fontSize: design.invocation === "bismillah" ? "4.4cqw" : "4cqw", color: "var(--t-accent)" }} dir="auto">{inv.text}</p>}
-      {c.eyebrow && <p className="eyebrow text-[var(--t-muted)]" style={{ fontSize: "2.3cqw" }}>{c.eyebrow}</p>}
-      {c.lead && <p className="max-w-[78cqw] leading-relaxed text-[var(--t-muted)]" style={{ fontSize: "2.9cqw" }}>{c.lead}</p>}
+      {c.eyebrow && <E as="p" path="texts.eyebrow" className="eyebrow block text-[var(--t-muted)]" style={{ fontSize: "2.3cqw" }}>{c.eyebrow}</E>}
+      {c.lead && (kind === "invite" ? <E as="p" multiline path="profile.inviteLine" className="block max-w-[78cqw] leading-relaxed text-[var(--t-muted)]" style={{ fontSize: "2.9cqw" }}>{c.lead}</E> : <p className="max-w-[78cqw] leading-relaxed text-[var(--t-muted)]" style={{ fontSize: "2.9cqw" }}>{c.lead}</p>)}
       {c.number !== undefined ? (
         <>
           <p className="eyebrow text-[var(--t-muted)]" style={{ fontSize: "3.4cqw" }}>{c.headline}</p>
@@ -87,12 +89,12 @@ export function Paper({ kind, layout, design, profile, theme, photoUrl, animate 
       ) : c.hashtag ? (
         <>
           <p className="script text-[var(--t-accent)]" style={{ fontSize: "6cqw" }}>{c.body}</p>
-          <p className="display foil break-all leading-tight" style={{ fontSize: `${9 * scale}cqw` }}>{c.hashtag}</p>
+          <E as="p" path="texts.hashtag" className="display foil block break-all leading-tight" style={{ fontSize: `${9 * scale}cqw` }}>{c.hashtag}</E>
           <p className="eyebrow text-[var(--t-muted)]" style={{ fontSize: "2.3cqw" }}>{both}</p>
         </>
       ) : (
         <>
-          {c.headline && <p className={c.names ? "display text-[var(--t-accent)]" : "display foil"} style={{ fontSize: c.names ? "6.5cqw" : `${(landscape ? 9 : 11) * scale}cqw`, lineHeight: 1.05 }}>{c.headline}</p>}
+          {c.headline && <E as="p" path="texts.headline" className={c.names ? "display block text-[var(--t-accent)]" : "display foil block"} style={{ fontSize: c.names ? "6.5cqw" : `${(landscape ? 9 : 11) * scale}cqw`, lineHeight: 1.05 }}>{c.headline}</E>}
           {c.names && names(c.headline ? nameSize * 0.72 : nameSize)}
           {!c.names && kind !== "table" && <p className="script text-[var(--t-accent)]" style={{ fontSize: "5cqw" }}>{both}</p>}
           {c.sub && <p className="eyebrow text-[var(--t-muted)]" style={{ fontSize: "2.1cqw" }}>{c.sub}</p>}
@@ -102,13 +104,13 @@ export function Paper({ kind, layout, design, profile, theme, photoUrl, animate 
         <ul className="w-full" style={{ marginTop: "1cqw" }}>
           {c.items.map((it, i) => (
             <li key={i} style={{ padding: "1.6cqw 0" }} className={i ? "border-t border-[var(--t-gold)]/30" : ""}>
-              <p className="display" style={{ fontSize: `${tall ? 5.4 : 4.4}cqw` }}>{it.title}</p>
-              {it.detail && <p className="text-[var(--t-muted)]" style={{ fontSize: `${tall ? 3.1 : 2.6}cqw`, marginTop: "0.4cqw" }}>{it.detail}</p>}
+              <E as="p" path={`items.${i}.title`} className="display block" style={{ fontSize: `${tall ? 5.4 : 4.4}cqw` }}>{it.title}</E>
+              {it.detail && <E as="p" path={`items.${i}.detail`} className="block text-[var(--t-muted)]" style={{ fontSize: `${tall ? 3.1 : 2.6}cqw`, marginTop: "0.4cqw" }}>{it.detail}</E>}
             </li>
           ))}
         </ul>
       )}
-      {c.body && !c.hashtag && <p className="display max-w-[80cqw] text-[var(--t-muted)]" style={{ fontSize: "3.8cqw", lineHeight: 1.4 }}>{c.body}</p>}
+      {c.body && !c.hashtag && <E as="p" multiline path="texts.body" className="display block max-w-[80cqw] whitespace-pre-line text-[var(--t-muted)]" style={{ fontSize: "3.8cqw", lineHeight: 1.4 }}>{c.body}</E>}
     </div>
   );
 
@@ -119,8 +121,8 @@ export function Paper({ kind, layout, design, profile, theme, photoUrl, animate 
           <span className="h-px w-[9cqw] bg-current" /><span style={{ fontSize: "2cqw" }}>✦</span><span className="h-px w-[9cqw] bg-current" />
         </div>
         {c.date && <p className="display" style={{ fontSize: "4.6cqw" }}>{c.date}</p>}
-        {c.where && <p className="tracking-wide text-[var(--t-muted)]" style={{ fontSize: "2.6cqw", marginTop: "0.6cqw" }}>{c.where}</p>}
-        {c.footer && <p className="script text-[var(--t-accent)]" style={{ fontSize: "4.2cqw", marginTop: "1.4cqw" }}>{c.footer}</p>}
+        {c.where && <E as="p" path={c.where === profile.venue ? "profile.venue" : "profile.city"} className="block tracking-wide text-[var(--t-muted)]" style={{ fontSize: "2.6cqw", marginTop: "0.6cqw" }}>{c.where}</E>}
+        {c.footer && <E as="p" path={design.texts?.footer === undefined && (kind === "invite" || kind === "story" || kind === "greeting") ? "profile.blessing" : "texts.footer"} className="script block text-[var(--t-accent)]" style={{ fontSize: "4.2cqw", marginTop: "1.4cqw" }}>{c.footer}</E>}
       </div>
     ) : null;
 
@@ -130,18 +132,20 @@ export function Paper({ kind, layout, design, profile, theme, photoUrl, animate 
   return (
     <div
       lang={profile.language ?? "en"}
-      style={{ ...themeVars(theme), aspectRatio: ratio }}
-      className={`@container relative w-full overflow-hidden rounded-[3px] bg-[var(--t-surface)] text-[var(--t-ink)] shadow-[0_50px_100px_-40px_rgba(74,20,36,.55),0_0_0_1px_rgba(0,0,0,.04)] transition-colors duration-1000 ${className}`}
+      style={{ ...designVars(theme, design), aspectRatio: ratio }}
+      className={`@container tbody relative w-full overflow-hidden rounded-[3px] bg-[var(--t-surface)] text-[var(--t-ink)] shadow-[0_50px_100px_-40px_rgba(74,20,36,.55),0_0_0_1px_rgba(0,0,0,.04)] transition-colors duration-1000 ${className}`}
     >
       <div className={`pointer-events-none absolute inset-0 ${glow}`} />
       {animate && <Sparkles color="var(--t-gold)" className="opacity-60" />}
 
-      {layout === "photo" ? (
+      {CARD_LAYOUTS[layout] ? (
+        CARD_LAYOUTS[layout]({ body, footer, photoUrl, a, b, age: profile.age, theme, draw, motif: (cls, k = "") => <Motif key={theme.id + (motif ?? "") + k} theme={theme} motif={motif} className={cls} /> })
+      ) : layout === "photo" ? (
         <div className="relative flex h-full flex-col">
           <div className="relative h-[52%] overflow-hidden">
             {photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+              <img data-edit-photo="photo" src={photoUrl} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_50%_60%,color-mix(in_oklab,var(--t-accent)_22%,var(--t-surface)),var(--t-surface))]">
                 <Motif key={theme.id + motif} theme={theme} motif={motif} className={`${draw} w-[55cqw]`} />

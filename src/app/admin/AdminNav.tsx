@@ -5,6 +5,7 @@ const TABS = [
   ["overview", "/admin", "Celebrations"],
   ["orders", "/admin/orders", "Orders & revenue"],
   ["pricing", "/admin/pricing", "Pricing & packages"],
+  ["templates", "/admin/templates", "Templates"],
   ["promos", "/admin/promos", "Promo codes"],
   ["partners", "/admin/partners", "Partners"],
 ] as const;

@@ -22,6 +22,20 @@ export function inviteHtml(p: Profile, th: Theme, url: string, guest: string) {
 </td></tr></table></td></tr></table></body></html>`;
 }
 
+export function reminderHtml(p: Profile, th: Theme, url: string, guest: string) {
+  const L = t(p.language);
+  const date = formatDate(p.date, p.language);
+  const intro = p.language === "ru" ? "Мы будем рады узнать, сможете ли вы быть с нами" : p.language === "hi" ? "कृपया हमें बताएँ कि क्या आप पधारेंगे" : "We’d love to know if you can join us";
+  return `<!doctype html><html><body style="margin:0;background:${th.bg};font-family:Georgia,'Times New Roman',serif;color:${th.ink}">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:48px 16px">
+<table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;background:${th.surface};border:1px solid ${th.gold};"><tr><td align="center" style="padding:44px 36px">
+<p style="margin:0 0 18px;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:${th.muted}">Dear ${escape(guest)}</p>
+<p style="margin:0 0 10px;font-size:22px">${escape(intro)}</p>
+<p style="margin:0 0 28px;font-size:15px;color:${th.muted}">${escape(date)}${p.venue || p.city ? " · " + escape(p.venue || p.city || "") : ""}</p>
+<a href="${url}" style="display:inline-block;padding:14px 32px;background:${th.accent};color:#fff;text-decoration:none;font-family:Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase">${L.rsvp}</a>
+</td></tr></table></td></tr></table></body></html>`;
+}
+
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 export async function sendEmail(to: string, subject: string, html: string) {

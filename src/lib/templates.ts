@@ -1,5 +1,6 @@
 import type { Profile } from "./profile";
 import type { MotifId, InvocationId } from "./motifs";
+import { CATALOG } from "./catalog";
 
 // ── Everything a wedding needs, as editable "pieces" ──
 export const KINDS = {
@@ -59,8 +60,28 @@ export const PAPER_LAYOUTS = {
   monogram: "Monogram wreath",
   botanical: "Botanical border",
   photo: "Photograph",
+  deco: "Art deco",
+  jharokha: "Jharokha window",
+  lace: "Russian lace",
+  polaroid: "Polaroid scrapbook",
+  confetti: "Confetti pop",
+  watercolour: "Watercolour wash",
+  split: "Split photograph",
+  fullbleed: "Full-bleed photograph",
+  letterpress: "Letterpress",
 } as const;
-export const SITE_LAYOUTS = { romance: "Romance", editorial: "Editorial", arch: "Palace arch" } as const;
+export const SITE_LAYOUTS = {
+  romance: "Romance",
+  editorial: "Editorial",
+  arch: "Palace arch",
+  cinematic: "Cinematic",
+  magazine: "Magazine",
+  letter: "Love letter",
+  timeline: "Timeline story",
+  gallery: "Gallery first",
+  deco: "Art deco",
+  playful: "Playful",
+} as const;
 export type PaperLayout = keyof typeof PAPER_LAYOUTS;
 export type SiteLayout = keyof typeof SITE_LAYOUTS;
 
@@ -78,118 +99,21 @@ export type Design = {
   scale?: number; // 0.8–1.3 name size
   sections?: { order?: SectionId[]; hidden?: SectionId[] }; // website only
   gallery?: string[]; // website only: object-storage keys, in order
+  fonts?: string; // font pairing id (see lib/editor-options.ts FONT_PAIRS)
+  palette?: { accent?: string; ink?: string; bg?: string }; // colour overrides (hex); curated unless Luxury
+  reveal?: string; // signature animation override
+  template?: string; // catalog template id this piece was created from
 };
 
 export type Doc = { id: string; kind: Kind; layout: string; design: Design; position: number };
 
-// Curated named templates for the gallery: kind × layout × theme × motif.
-type T = { id: string; name: string; kind: Kind; layout: string; theme: string; motif?: MotifId };
-const POETRY: [string, string, MotifId | undefined, string][] = [
-  ["Ashwem Dusk", "konkan-sunset", "palms", "classic"],
-  ["Lisbon Letter", "azulejo", "azulejo", "editorial"],
-  ["Maharani", "rajwada", "arch", "arch"],
-  ["Neva Monogram", "belaya-noch", "birch", "monogram"],
-  ["Mogra Bloom", "mogra", "jasmine", "botanical"],
-  ["Haldi Sun", "gulmohar", "marigold", "botanical"],
-  ["Noor Lantern", "noor", "lattice", "arch"],
-  ["Starlit Sangeet", "sangeet-night", "stars", "monogram"],
-  ["Assagao Portrait", "azulejo", "doves", "photo"],
-  ["Moscow Folk", "belaya-noch", "khokhloma", "classic"],
-  ["Mehendi Ambi", "gulmohar", "paisley", "classic"],
-  ["Lotus Vows", "mogra", "lotus", "arch"],
-];
-
-// Per-occasion collections. [name, theme, motif, layout]
-const COLLECTIONS: Record<string, [string, string, MotifId | undefined, string][]> = {
-  engagement: [
-    ["Solitaire", "rose-quartz", "rings", "monogram"],
-    ["Champagne Toast", "champagne-noir", "champagne", "classic"],
-    ["Fontainhas Letter", "azulejo", "azulejo", "editorial"],
-    ["Roka Marigold", "gulmohar", "marigold", "botanical"],
-    ["Starlit Promise", "sangeet-night", "stars", "arch"],
-    ["Jasmine Yes", "mogra", "jasmine", "botanical"],
-    ["Our Portrait", "rose-quartz", "doves", "photo"],
-    ["Moscow Evening", "belaya-noch", "birch", "classic"],
-  ],
-  anniversary: [
-    ["Pearl Years", "pearl", "doves", "classic"],
-    ["Ruby Devotion", "ruby", "rings", "monogram"],
-    ["Silver Birch", "belaya-noch", "birch", "botanical"],
-    ["Golden Arch", "rajwada", "arch", "arch"],
-    ["Love Letters", "love-letter", "ribbon", "editorial"],
-    ["Then & Now", "pearl", "rings", "photo"],
-    ["Emerald Evening", "noor", "lattice", "arch"],
-    ["Tiered Toast", "champagne-noir", "cake", "classic"],
-  ],
-  birthday: [
-    ["Champagne Noir", "champagne-noir", "champagne", "classic"],
-    ["Midnight Thirty", "sangeet-night", "stars", "monogram"],
-    ["Blush Soirée", "rose-quartz", "cake", "arch"],
-    ["Sundowner", "konkan-sunset", "palms", "editorial"],
-    ["Marigold Fiesta", "gulmohar", "confetti", "botanical"],
-    ["Portrait Party", "champagne-noir", "champagne", "photo"],
-    ["Garden Lunch", "mogra", "jasmine", "botanical"],
-    ["Velvet Cake", "ruby", "cake", "classic"],
-  ],
-  kids: [
-    ["Balloon Parade", "confetti-garden", "balloons", "classic"],
-    ["Confetti Cake", "confetti-garden", "cake", "arch"],
-    ["Sleepy Moon", "cloud-nursery", "moon", "monogram"],
-    ["Starship", "sangeet-night", "stars", "classic"],
-    ["Sunshine Picnic", "gulmohar", "confetti", "botanical"],
-    ["Party Portrait", "confetti-garden", "balloons", "photo"],
-    ["Beach Day", "konkan-sunset", "palms", "editorial"],
-  ],
-  baby_shower: [
-    ["Cloud Nine", "cloud-nursery", "moon", "classic"],
-    ["Little Star", "cloud-nursery", "rattle", "monogram"],
-    ["Blush Bundle", "rose-quartz", "ribbon", "arch"],
-    ["Godh Bharai", "gulmohar", "marigold", "botanical"],
-    ["Jasmine Lullaby", "mogra", "jasmine", "botanical"],
-    ["Bump Portrait", "pearl", "moon", "photo"],
-    ["Doves & Blessings", "pearl", "doves", "editorial"],
-  ],
-  greeting: [
-    ["Love Letter", "love-letter", "ribbon", "classic"],
-    ["Many Happy Returns", "champagne-noir", "cake", "monogram"],
-    ["With Gratitude", "pearl", "doves", "editorial"],
-    ["Welcome, Little One", "cloud-nursery", "rattle", "arch"],
-    ["Festival of Lights", "rajwada", "lotus", "arch"],
-    ["Starry Wishes", "sangeet-night", "stars", "classic"],
-    ["Blush Bouquet", "rose-quartz", "jasmine", "botanical"],
-    ["Eid Lanterns", "noor", "lattice", "arch"],
-    ["Snowy Birch", "belaya-noch", "birch", "botanical"],
-    ["Memory Portrait", "love-letter", "ribbon", "photo"],
-  ],
-};
-
-const SITE_COLLECTIONS: Record<string, [string, string, string][]> = {
-  engagement: [["Solitaire", "romance", "rose-quartz"], ["Champagne Evening", "editorial", "champagne-noir"], ["Fontainhas", "arch", "azulejo"]],
-  anniversary: [["Pearl Years", "romance", "pearl"], ["Ruby Devotion", "arch", "ruby"], ["Love Letters", "editorial", "love-letter"]],
-  birthday: [["Champagne Noir", "editorial", "champagne-noir"], ["Midnight Party", "romance", "sangeet-night"], ["Blush Soirée", "arch", "rose-quartz"]],
-  kids: [["Balloon Parade", "romance", "confetti-garden"], ["Sleepy Moon", "arch", "cloud-nursery"], ["Sunshine", "editorial", "gulmohar"]],
-  baby_shower: [["Cloud Nine", "romance", "cloud-nursery"], ["Blush Bundle", "arch", "rose-quartz"], ["Jasmine", "editorial", "mogra"]],
-  greeting: [["Love Letter", "romance", "love-letter"], ["Champagne", "editorial", "champagne-noir"]],
-};
-
-const slug = (s: string) => s.toLowerCase().replace(/\W+/g, "-");
+// Named templates for the gallery derive from the catalog (lib/catalog.ts): one suite → every piece kind.
+type T = { id: string; name: string; kind: Kind; layout: string; theme: string; motif?: MotifId; fonts?: string; template: string };
 
 export function templatesFor(kind: Kind, occasion: string = "wedding"): T[] {
-  if (occasion !== "wedding") {
-    if (kind === "website" && SITE_COLLECTIONS[occasion]) return SITE_COLLECTIONS[occasion].map(([name, layout, theme]) => ({ id: `web-${occasion}-${slug(name)}`, name, kind, layout, theme }));
-    if (kind !== "website" && COLLECTIONS[occasion]) return COLLECTIONS[occasion].map(([name, theme, motif, layout]) => ({ id: `${kind}-${occasion}-${slug(name)}`, name, kind, layout, theme, motif }));
-  }
-  if (kind === "greeting") return COLLECTIONS.greeting.map(([name, theme, motif, layout]) => ({ id: `${kind}-${slug(name)}`, name, kind, layout, theme, motif }));
-  if (kind === "website")
-    return [
-      { id: "web-romance", name: "Romance", kind, layout: "romance", theme: "konkan-sunset" },
-      { id: "web-editorial", name: "Editorial", kind, layout: "editorial", theme: "azulejo" },
-      { id: "web-arch", name: "Palace Arch", kind, layout: "arch", theme: "rajwada" },
-      { id: "web-noor", name: "Noor Evening", kind, layout: "arch", theme: "noor" },
-      { id: "web-neva", name: "White Nights", kind, layout: "editorial", theme: "belaya-noch" },
-      { id: "web-haldi", name: "Haldi Sunshine", kind, layout: "romance", theme: "gulmohar" },
-    ];
-  return POETRY.map(([name, theme, motif, layout]) => ({ id: `${kind}-${name.toLowerCase().replace(/\W+/g, "-")}`, name, kind, layout, theme, motif }));
+  const list = CATALOG.filter((t) => t.occasion === occasion);
+  const src = list.length ? list : CATALOG.filter((t) => t.occasion === "wedding");
+  return src.map((t) => ({ id: `${kind}-${t.id}`, name: t.name, kind, layout: kind === "website" ? t.siteLayout : t.paperLayout, theme: t.theme, motif: t.motif, fonts: t.fonts, template: t.id }));
 }
 
 // Sensible, culturally aware default content for each new piece.

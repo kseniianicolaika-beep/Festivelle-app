@@ -10,6 +10,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if ("error" in g) return g.error;
   const b = await req.json();
   if (!isKind(b.kind)) return Response.json({ error: "Unknown piece" }, { status: 400 });
-  const doc = await createDoc(id, b.kind, g.wedding.profile, b.layout, cleanDesign({ theme: b.theme, motif: b.motif }, b.kind) ?? {});
+  const doc = await createDoc(id, b.kind, g.wedding.profile, b.layout, cleanDesign({ theme: b.theme, motif: b.motif, fonts: b.fonts }, b.kind) ?? {});
   return Response.json({ doc });
 }

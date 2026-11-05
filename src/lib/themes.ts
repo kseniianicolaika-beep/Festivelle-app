@@ -1,4 +1,5 @@
 import type { MotifId } from "./motifs";
+import { fontVars } from "./fonts";
 
 export type Theme = {
   id: string;
@@ -33,12 +34,24 @@ export const THEMES: Theme[] = [
   { id: "cloud-nursery", name: "Cloud Nursery", mood: "Powder blue, soft clouds and a sleepy crescent moon", bg: "#F4F7FB", surface: "#FFFFFF", ink: "#2E3A55", muted: "#7B87A0", accent: "#8BA7D1", gold: "#D9B98A", motif: "moon", foil: ["#6b84ad", "#e2c79c"], petals: ["#dfe8f6", "#f6e3e8", "#ffffff", "#e9eef8"] },
   { id: "pearl", name: "Pearl", mood: "Ivory, lustre and the quiet grace of many years", bg: "#F8F5EF", surface: "#FFFDF9", ink: "#2D2A26", muted: "#857D72", accent: "#9A8468", gold: "#BBA98A", motif: "doves", foil: ["#8a7a63", "#e8dcc6"], petals: ["#ffffff", "#efe8dc", "#f7f2ea", "#e3dbcd"] },
   { id: "ruby", name: "Ruby", mood: "Deep claret, velvet and forty years of devotion", bg: "#2B0B14", surface: "#3A1120", ink: "#F7E6E0", muted: "#D2AFA8", accent: "#E2526B", gold: "#D8A657", motif: "rings", dark: true, foil: ["#c48a43", "#ffe1b0"], petals: ["#b3203f", "#e2526b", "#f3b0b9", "#d8a657"] },
+  // ── Catalog expansion ──
+  { id: "deco-onyx", name: "Deco Onyx", mood: "Gatsby gold on onyx — fans, chevrons and a jazz-age toast", bg: "#0E0E10", surface: "#151517", ink: "#F1E6CF", muted: "#B3A78E", accent: "#D6B36A", gold: "#D6B36A", motif: "fan", dark: true, foil: ["#a07a35", "#f7e2a8"], petals: ["#d6b36a", "#f1e6cf", "#8f7440", "#fff4d6"] },
+  { id: "terracotta", name: "Terracotta", mood: "Sun-baked clay, pampas and a long table under the trees", bg: "#F7EEE5", surface: "#FCF6F0", ink: "#3E2418", muted: "#94705C", accent: "#B8572F", gold: "#C99A62", motif: "eucalyptus", foil: ["#8a4a2a", "#e3b483"], petals: ["#e8b896", "#d98d63", "#f3dcc8", "#c7a27c"] },
+  { id: "sage", name: "Sage Garden", mood: "Eucalyptus, linen and soft morning light", bg: "#F2F4EE", surface: "#FAFBF7", ink: "#26332A", muted: "#6E7B70", accent: "#5E7D63", gold: "#B4A276", motif: "eucalyptus", foil: ["#3f5a44", "#c4b689"], petals: ["#dfe7d8", "#ffffff", "#c9d6c1", "#eef2e9"] },
+  { id: "gzhel", name: "Gzhel", mood: "Cobalt brushstrokes on white porcelain — Russian folk elegance", bg: "#F7F9FD", surface: "#FFFFFF", ink: "#0F2A6B", muted: "#5268A0", accent: "#1C46B5", gold: "#1C46B5", motif: "khokhloma", foil: ["#0f2a6b", "#5f86e0"], petals: ["#cfdcf7", "#ffffff", "#9fb7ee", "#e8eefb"] },
+  { id: "lace-ivory", name: "Vologda Lace", mood: "Hand-made Russian lace, ivory silk and church bells", bg: "#FAF7F1", surface: "#FFFEFB", ink: "#33302B", muted: "#8B847A", accent: "#A3896A", gold: "#C2AE8E", motif: "birch", foil: ["#7d6a52", "#e6d6b8"], petals: ["#ffffff", "#f3ede2", "#e9e1d2", "#fbf8f2"] },
+  { id: "mehendi", name: "Mehendi", mood: "Henna green, rose petals and an afternoon of music", bg: "#F3F1E4", surface: "#FBFAF1", ink: "#2E3A1C", muted: "#6F7A55", accent: "#B5452E", gold: "#B79B4A", motif: "henna", foil: ["#4f5e26", "#d3bd6e"], petals: ["#e8604a", "#f4b860", "#9db35b", "#f7d9a0"] },
+  { id: "diwali", name: "Diwali", mood: "Aubergine night, a thousand diyas and gold", bg: "#241231", surface: "#2E1840", ink: "#F9E9C9", muted: "#CDB5D6", accent: "#F2A93B", gold: "#E6B556", motif: "diya", dark: true, foil: ["#c58b2c", "#ffe7a8"], petals: ["#f2a93b", "#ff7b54", "#ffd56b", "#d36bd9"] },
+  { id: "pine-frost", name: "Pine & Frost", mood: "Fir, frost and candlelight — Christmas and New Year", bg: "#0F2620", surface: "#15302A", ink: "#EEF3EE", muted: "#A9BCB3", accent: "#C9443B", gold: "#D8B66A", motif: "snowflake", dark: true, foil: ["#b89042", "#f6e2a6"], petals: ["#ffffff", "#e3eef0", "#c9443b", "#d8b66a"] },
+  { id: "maslenitsa", name: "Maslenitsa", mood: "Golden bliny, red folk ribbons and spring sun", bg: "#FFF6E6", surface: "#FFFBF2", ink: "#4A1A10", muted: "#9A6A50", accent: "#D4372C", gold: "#E7A62A", motif: "sun", foil: ["#b5401c", "#f6c247"], petals: ["#f6c247", "#d4372c", "#ffe39b", "#f08a4b"] },
+  { id: "lagoon", name: "Lagoon", mood: "Turquoise water, seashells and sandy toes", bg: "#EEF8F7", surface: "#FAFFFE", ink: "#173E45", muted: "#5C8389", accent: "#F08A6A", gold: "#2FA3A0", motif: "shell", foil: ["#1c7c7a", "#7fd6cf"], petals: ["#b7e6e1", "#ffd7c7", "#ffffff", "#f7e7c1"] },
+  { id: "lilac-dusk", name: "Lilac Dusk", mood: "Wisteria, twilight and silver", bg: "#F5F1F8", surface: "#FDFBFE", ink: "#352A45", muted: "#857A96", accent: "#8E6BB8", gold: "#B7A6C9", motif: "jasmine", foil: ["#6a4f8e", "#d9c9ec"], petals: ["#e4d7f1", "#ffffff", "#cdb8e5", "#f3edf8"] },
   { id: "love-letter", name: "Love Letter", mood: "Cotton paper, a silk ribbon and handwriting you can feel", bg: "#FBF6EE", surface: "#FFFCF6", ink: "#3A2A24", muted: "#8C7769", accent: "#B5546B", gold: "#C6A36F", motif: "ribbon", foil: ["#8e5b4a", "#e2bf8c"], petals: ["#f4d3d3", "#f9e8dc", "#e8b9bf", "#fff6ee"] },
 ];
 
 /** Themes most fitting for an occasion, first = default. Couples can always choose any. */
 export const OCCASION_THEMES: Record<string, string[]> = {
-  wedding: ["konkan-sunset", "azulejo", "rajwada", "belaya-noch", "mogra", "gulmohar", "noor", "sangeet-night"],
+  wedding: ["konkan-sunset", "azulejo", "rajwada", "belaya-noch", "mogra", "gulmohar", "noor", "sangeet-night", "deco-onyx", "sage", "terracotta", "gzhel", "lace-ivory", "mehendi"],
   engagement: ["rose-quartz", "champagne-noir", "azulejo", "mogra", "sangeet-night", "konkan-sunset"],
   anniversary: ["pearl", "ruby", "belaya-noch", "rajwada", "love-letter", "noor"],
   birthday: ["champagne-noir", "sangeet-night", "rose-quartz", "konkan-sunset", "gulmohar", "mogra"],
@@ -62,6 +75,17 @@ export function pickTheme(vibe = "", culture = ""): string {
   if (/pearl|ivory|timeless/.test(v)) return "pearl";
   if (/ruby|claret|velvet/.test(v)) return "ruby";
   if (/letter|ribbon|handwritten/.test(v)) return "love-letter";
+  if (/deco|gatsby|jazz/.test(v)) return "deco-onyx";
+  if (/boho|terracotta|rustic/.test(v)) return "terracotta";
+  if (/sage|eucalyptus|greenery/.test(v)) return "sage";
+  if (/gzhel|porcelain|cobalt/.test(v)) return "gzhel";
+  if (/lace|vologda/.test(v)) return "lace-ivory";
+  if (/mehendi|henna/.test(v)) return "mehendi";
+  if (/diwali|diya/.test(v)) return "diwali";
+  if (/christmas|new year|snow|frost/.test(v)) return "pine-frost";
+  if (/maslenitsa|blini|folk sun/.test(v)) return "maslenitsa";
+  if (/ocean|under the sea|lagoon|mermaid/.test(v)) return "lagoon";
+  if (/lilac|lavender|wisteria/.test(v)) return "lilac-dusk";
   if (/sangeet|night|party|star|midnight/.test(v)) return "sangeet-night";
   if (/royal|palace|rajwada|grand|heritage/.test(v)) return "rajwada";
   if (/white|birch|winter|petersburg|classic russian|belaya/.test(v)) return "belaya-noch";
@@ -84,3 +108,14 @@ export const themeVars = (t: Theme) =>
   }) as React.CSSProperties;
 
 export const petalColors = (t: Theme) => t.petals;
+
+/** Theme vars + per-piece overrides (palette from the visual editor, font pairing). */
+export function designVars(t: Theme, d?: { palette?: { accent?: string; bg?: string; ink?: string }; fonts?: string }) {
+  const hex = (c?: string) => (c && /^#[0-9a-f]{3,8}$/i.test(c) ? c : undefined);
+  const v: Record<string, string> = { ...(themeVars(t) as Record<string, string>) };
+  const p = d?.palette;
+  if (hex(p?.accent)) v["--t-accent"] = p!.accent!;
+  if (hex(p?.bg)) { v["--t-bg"] = p!.bg!; v["--t-surface"] = p!.bg!; }
+  if (hex(p?.ink)) v["--t-ink"] = p!.ink!;
+  return { ...v, ...fontVars(d?.fonts) } as React.CSSProperties;
+}

@@ -91,7 +91,52 @@ OpenRouter free models, then to the rule-based designer, so the chat never break
 and greetings (3 options). `/api/ai/visual` generates illustrations when `IMAGE_MODEL` is set (image models are not in
 the free plan). Upgrade to Experiential Labs Pro ($20/mo, 10×) when traffic grows.
 
-## Templates, workspaces, agencies
+## Templates (62 complete suites)
+
+`src/lib/catalog.ts` — every template is a matching suite (website, invitation, save-the-date/event card, story,
+thank-you, video variant), structurally distinct rather than recoloured:
+
+| Occasion | Count | Cultures / themes |
+|---|---|---|
+| Wedding | 16 | Indian, Russian, Goan Catholic, Muslim, fusion, Western |
+| Engagement | 8 | |
+| Anniversary | 6 | |
+| Birthday | 8 | incl. 30 / 40 / 50 / 60 milestones |
+| Children's party | 8 | |
+| Baby shower | 6 | |
+| Greetings | 10 | Diwali, Eid, Christmas, Russian New Year, Maslenitsa… |
+
+Built from **15 card layouts** (classic, arch, editorial, monogram, botanical, photo, deco, jharokha, lace, polaroid,
+confetti, watercolour, split, full-bleed, letterpress — `src/components/designs/layouts/cards.tsx`), **10 website
+layouts** with signature reveals (romance, editorial, arch, cinematic, magazine, letter, timeline, gallery, deco curtain,
+playful balloons — `src/components/site/heroes.tsx`), 19 colour worlds, ~29 hand-drawn SVG motifs and font pairings
+that cover Cyrillic and Devanagari (`src/lib/fonts.ts`). No paid stock art: everything is SVG/CSS.
+Admins feature, hide, reorder and group templates into seasonal collections at `/admin/templates`.
+
+## Visual editor (in sync with the conversation)
+
+Conversation stays first, but the preview is directly editable (“✎ Edit on preview”):
+click any text to edit inline, click a photo to swap it, select a section to move/hide it; a floating toolbar sets
+font pairing, size, alignment and a curated accent palette (free colour picker on Luxury). Undo/redo (⌘Z) and version
+history (`doc_versions`). Chat and editor write the same design — one source of truth — and each visual edit is logged
+as a quiet chat line (`messages.kind = 'edit'`) so the AI knows the context. **Point and ask:** select an element and
+say “make this warmer” or “translate this to Russian”; the AI receives the selected element.
+
+## Guests
+
+- Guest list `/studio/[id]/guests`: households, per-event invitations, plus-ones, meal & dietary answers, CSV
+  import/export, reminders to non-responders, per-guest WhatsApp/Telegram/email links.
+- Personal links `?g=<token>` greet each guest by name, show only their events and pre-fill the RSVP.
+- Guest photo uploads (Premium+) into a host-moderated gallery; a guest Q&A assistant on the live site answers only
+  from the hosts' details (free models, metered on the host's allowance).
+
+## Marketing & SEO
+
+Public landing page at `/` (EN/RU/HI, live “talk → it designs itself” demo), `/templates` with filters,
+`/templates/<id>` SEO pages (JSON-LD, Open Graph), `/invitations/<slug>` occasion/culture landing pages,
+`sitemap.xml` and `robots.txt`. Signed-in users get a “Your studio” button.
+
+## Workspaces & agencies (earlier pieces)
 
 - **12 wedding pieces**, each designed and editable by chat: wedding website, invitation, save-the-date, event cards (haldi, mehendi, sangeet, ZAGS…), Instagram story / WhatsApp status, square post, welcome sign, order of ceremony, menu, table numbers, photo & hashtag sign, and thank-you card.
 - **Template gallery:** 12 named templates per piece (Ashwem Dusk, Lisbon Letter, Maharani, Neva Monogram, Mogra Bloom, Haldi Sun, Noor Lantern, Starlit Sangeet, Assagao Portrait, Moscow Folk, Mehendi Ambi, Lotus Vows), plus 6 website templates. Every preview uses the couple's own names and date.
@@ -171,7 +216,7 @@ neon realtime enable --allowed-origin https://<domain>
 
 ## Data model
 
-`settings` (pricing JSON), `orders`, `promos`, `partners`, `credits`, `ai_usage`, `weddings` (+ `tier`, `video_tier`, `activated_at`, `expires_at`, `subdomain`; occasion in `profile.occasion`), `workspaces`, `members` (workspace × user × role), `invites`, `weddings` (belong to a workspace, with an optional client name), `documents` (one per piece: kind, layout, design JSON), `assets` (workspace library), `messages`, `guests`, `rsvps`. Run `node --env-file=.env.local scripts/migrate.mjs`. It's idempotent and backfills workspaces and starter pieces for older data.
+`settings` (pricing + template curation JSON), `doc_versions`, `guest_photos`, guests (+ household, events, token, plus-ones), `orders`, `promos`, `partners`, `credits`, `ai_usage`, `weddings` (+ `tier`, `video_tier`, `activated_at`, `expires_at`, `subdomain`; occasion in `profile.occasion`), `workspaces`, `members` (workspace × user × role), `invites`, `weddings` (belong to a workspace, with an optional client name), `documents` (one per piece: kind, layout, design JSON), `assets` (workspace library), `messages`, `guests`, `rsvps`. Run `node --env-file=.env.local scripts/migrate.mjs`. It's idempotent and backfills workspaces and starter pieces for older data.
 
 ## Roadmap
 

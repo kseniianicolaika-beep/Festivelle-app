@@ -40,6 +40,35 @@ export async function patchDoc(doc: Doc, patch: Partial<Design> & { layout?: str
   return d;
 }
 
+// ── Version history (undo/redo + restore). A snapshot is taken BEFORE every change. ──
+export async function snapshot(doc: Doc, label: string | null, by: string | null) {
+  const [v] = (await sql`INSERT INTO doc_versions (document_id, layout, design, label, created_by)
+    VALUES (${doc.id}, ${doc.layout}, ${JSON.stringify(doc.design)}::jsonb, ${label}, ${by}) RETURNING id`) as { id: string }[];
+  // Keep history bounded per piece.
+  await sql`DELETE FROM doc_versions WHERE document_id = ${doc.id} AND id NOT IN (SELECT id FROM doc_versions WHERE document_id = ${doc.id} ORDER BY created_at DESC LIMIT 80)`;
+  return v.id;
+}
+
+export async function listVersions(docId: string) {
+  return (await sql`SELECT id, label, created_at FROM doc_versions WHERE document_id = ${docId} ORDER BY created_at DESC LIMIT 40`) as { id: string; label: string | null; created_at: string }[];
+}
+
+// Restores a stored version (snapshotting the current state first, so the restore itself is undoable).
+export async function restoreVersion(doc: Doc, versionId: string, by: string | null) {
+  if (!/^[0-9a-f-]{36}$/i.test(versionId)) return null;
+  const [v] = (await sql`SELECT layout, design FROM doc_versions WHERE id = ${versionId} AND document_id = ${doc.id}`) as { layout: string; design: Design }[];
+  if (!v) return null;
+  const back = await snapshot(doc, "before restore", by);
+  const [d] = (await sql`UPDATE documents SET layout = ${v.layout}, design = ${JSON.stringify(v.design)}::jsonb, updated_at = now() WHERE id = ${doc.id} RETURNING id, kind, layout, design, position`) as Doc[];
+  return { doc: d, versionId: back };
+}
+
+// A quiet line in the conversation, so the AI (and collaborators) know what changed visually.
+export async function logEdit(weddingId: string, text: string) {
+  const [m] = (await sql`INSERT INTO messages (wedding_id, role, content, kind) VALUES (${weddingId}, 'user', ${text.slice(0, 400)}, 'edit') RETURNING id, role, content, chips, kind`) as { id: string; role: "user"; content: string; chips: string[]; kind: string }[];
+  return m;
+}
+
 export const STARTER: { kind: Kind; layout: string }[] = [
   { kind: "invite", layout: "classic" },
   { kind: "website", layout: "romance" },

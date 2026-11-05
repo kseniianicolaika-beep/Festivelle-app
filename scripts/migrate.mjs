@@ -183,6 +183,45 @@ const statements = [
     n int NOT NULL DEFAULT 0,
     PRIMARY KEY (user_id, day, kind)
   )`,
+
+  // ── Guests 2.0 (fork C): households, per-event invites, personal links, meals, plus-ones, reminders, guest gallery ──
+  `ALTER TABLE guests ADD COLUMN IF NOT EXISTS household text`,
+  `ALTER TABLE guests ADD COLUMN IF NOT EXISTS phone text`,
+  `ALTER TABLE guests ADD COLUMN IF NOT EXISTS token text UNIQUE`,
+  `ALTER TABLE guests ADD COLUMN IF NOT EXISTS events text[]`,
+  `ALTER TABLE guests ADD COLUMN IF NOT EXISTS plus_ones int NOT NULL DEFAULT 0`,
+  `ALTER TABLE guests ADD COLUMN IF NOT EXISTS lang text`,
+  `ALTER TABLE guests ADD COLUMN IF NOT EXISTS notes text`,
+  `ALTER TABLE guests ADD COLUMN IF NOT EXISTS reminded_at timestamptz`,
+  `ALTER TABLE guests ADD COLUMN IF NOT EXISTS opened_at timestamptz`,
+  `ALTER TABLE rsvps ADD COLUMN IF NOT EXISTS guest_id uuid REFERENCES guests(id) ON DELETE SET NULL`,
+  `ALTER TABLE rsvps ADD COLUMN IF NOT EXISTS events jsonb`,
+  `ALTER TABLE rsvps ADD COLUMN IF NOT EXISTS meal text`,
+  `ALTER TABLE rsvps ADD COLUMN IF NOT EXISTS dietary text`,
+  `ALTER TABLE rsvps ADD COLUMN IF NOT EXISTS plus_one_name text`,
+  `CREATE TABLE IF NOT EXISTS guest_photos (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    wedding_id uuid NOT NULL REFERENCES weddings(id) ON DELETE CASCADE,
+    key text NOT NULL UNIQUE,
+    uploader text,
+    caption text,
+    approved boolean NOT NULL DEFAULT false,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS guest_photos_w_idx ON guest_photos(wedding_id, created_at DESC)`,
+
+  // ── Visual editor (fork A): quiet edit messages in the chat + per-piece version history for undo/redo ──
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'chat'`,
+  `CREATE TABLE IF NOT EXISTS doc_versions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id uuid NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    layout text NOT NULL,
+    design jsonb NOT NULL,
+    label text,
+    created_by text,
+    created_at timestamptz NOT NULL DEFAULT clock_timestamp()
+  )`,
+  `CREATE INDEX IF NOT EXISTS doc_versions_doc_idx ON doc_versions(document_id, created_at DESC)`,
 ];
 
 for (const s of statements) await sql.query(s);

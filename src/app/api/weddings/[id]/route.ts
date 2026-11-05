@@ -2,6 +2,8 @@ import { sql } from "@/lib/db";
 import { requireWedding } from "@/lib/guard";
 import { THEMES } from "@/lib/themes";
 import { isAdmin } from "@/lib/admin";
+import { EDITABLE_PROFILE } from "@/lib/editor-options";
+import { logEdit } from "@/lib/docs";
 import { activate, isExpired } from "@/lib/commerce";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,12 +19,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (isExpired(g.wedding) && !isAdmin(g.user)) return Response.json({ error: "Your hosting has ended — add an extension to bring it back.", needs: "extension" }, { status: 402 });
     await activate(id);
   }
+  // Visual editor: direct text edits of profile fields (names, venue, wording…), logged quietly into the chat.
+  let message = null;
+  if (body.profile && typeof body.profile === "object") {
+    const patch: Record<string, string | null> = {};
+    for (const k of EDITABLE_PROFILE) {
+      const v = body.profile[k];
+      if (typeof v === "string") patch[k] = v.trim().slice(0, k === "story" ? 1200 : 400) || null;
+    }
+    if (Object.keys(patch).length) {
+      await sql`UPDATE weddings SET profile = jsonb_strip_nulls(profile || ${JSON.stringify(patch)}::jsonb), updated_at = now() WHERE id = ${id}`;
+      if (typeof body.log === "string" && body.log.trim()) message = await logEdit(id, body.log);
+    }
+  }
   if (typeof body.clientName === "string") await sql`UPDATE weddings SET client_name = ${body.clientName.slice(0, 120) || null} WHERE id = ${id}`;
   // Hero photo must come from this wedding's workspace asset library (or the legacy per-wedding prefix).
   if (typeof body.heroKey === "string" && (body.heroKey.startsWith(`workspaces/${g.wedding.workspace_id}/`) || body.heroKey.startsWith(`weddings/${id}/`)))
     await sql`UPDATE weddings SET profile = profile || jsonb_build_object('heroKey', ${body.heroKey}::text), updated_at = now() WHERE id = ${id}`;
   if (body.heroKey === null) await sql`UPDATE weddings SET profile = profile - 'heroKey' WHERE id = ${id}`;
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, message });
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {

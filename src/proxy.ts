@@ -11,7 +11,7 @@ export function proxy(req: NextRequest) {
   const own = (process.env.APP_HOSTS ?? "").split(",").map((h) => h.trim()).filter(Boolean);
   if (root) own.push(root, `www.${root}`, `app.${root}`);
   if (!host || APP_HOST.test(host) || own.includes(host)) return NextResponse.next();
-  if (req.nextUrl.pathname === "/") return NextResponse.rewrite(new URL(`/d/${encodeURIComponent(host)}`, req.url));
+  if (req.nextUrl.pathname === "/") return NextResponse.rewrite(new URL(`/d/${encodeURIComponent(host)}${req.nextUrl.search}`, req.url));
   return NextResponse.next();
 }
 

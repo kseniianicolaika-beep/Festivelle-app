@@ -4,16 +4,26 @@ import { AnimatePresence, motion } from "motion/react";
 import { t, type Lang } from "@/lib/i18n";
 import { HeartBurst } from "@/components/fx/HeartBurst";
 
-export function RsvpForm({ slug, lang }: { slug: string; lang: Lang }) {
+const X = {
+  en: { dear: "Dear", which: "Which celebrations will you attend?", meal: "Meal preference", meals: ["No preference", "Vegetarian", "Non-vegetarian", "Vegan", "Jain", "Child's meal"], dietary: "Allergies or dietary needs", plusOne: "Your guest's name" },
+  ru: { dear: "Дорогая(ой)", which: "На каких событиях вы будете?", meal: "Предпочтения в еде", meals: ["Без предпочтений", "Вегетарианское", "Мясо / рыба", "Веганское", "Джайн", "Детское меню"], dietary: "Аллергии или ограничения", plusOne: "Имя вашего спутника" },
+  hi: { dear: "प्रिय", which: "आप किन समारोहों में आएँगे?", meal: "भोजन पसंद", meals: ["कोई पसंद नहीं", "शाकाहारी", "मांसाहारी", "वीगन", "जैन", "बच्चों का भोजन"], dietary: "एलर्जी या आहार संबंधी ज़रूरतें", plusOne: "आपके अतिथि का नाम" },
+} as const;
+
+export type RsvpGuest = { token: string; name: string; email: string | null; plusOnes: number };
+
+export function RsvpForm({ slug, lang, guest, events = [], askMeal = true }: { slug: string; lang: Lang; guest?: RsvpGuest | null; events?: string[]; askMeal?: boolean }) {
   const L = t(lang);
+  const x = X[lang] ?? X.en;
   const [attending, setAttending] = useState<boolean | null>(null);
+  const [picked, setPicked] = useState<Record<string, boolean>>(() => Object.fromEntries(events.map((e) => [e, true])));
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
 
   async function submit(form: FormData) {
     setState("sending");
     setError(null);
-    const res = await fetch("/api/rsvp", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, attending, name: form.get("name"), email: form.get("email"), party: form.get("party"), message: form.get("message") }) });
+    const res = await fetch("/api/rsvp", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, g: guest?.token, attending, name: form.get("name"), email: form.get("email"), party: form.get("party") ?? 1, message: form.get("message"), meal: form.get("meal"), dietary: form.get("dietary"), plusOne: form.get("plusOne"), events: events.length > 1 && attending ? picked : events.length ? Object.fromEntries(events.map((e) => [e, !!attending])) : undefined }) });
     if (res.ok) return setState("done");
     setError((await res.json()).error);
     setState("idle");
@@ -29,6 +39,7 @@ export function RsvpForm({ slug, lang }: { slug: string; lang: Lang }) {
   const input = "w-full border-b border-[var(--t-gold)]/50 bg-transparent py-3.5 outline-none transition-colors placeholder:text-[var(--t-muted)] focus:border-[var(--t-accent)]";
   return (
     <form action={submit} className="text-center">
+      {guest && <p className="script mb-2 text-3xl text-[var(--t-accent)]">{x.dear} {guest.name.split(" ")[0]}</p>}
       <p className="eyebrow text-[var(--t-muted)]">{L.rsvp}</p>
       <h2 className="display mt-3 text-[2.6rem] leading-tight">{L.attend}</h2>
       <div className="mt-9 grid grid-cols-2 gap-3">
@@ -42,9 +53,29 @@ export function RsvpForm({ slug, lang }: { slug: string; lang: Lang }) {
         {attending !== null && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.6, ease: [0.2, 0.7, 0.2, 1] }} className="overflow-hidden">
             <div className="mt-6 space-y-1 text-left">
-              <input name="name" required placeholder={L.name} className={input} />
-              <input name="email" type="email" placeholder={L.email} className={input} />
-              {attending && <input name="party" type="number" min={1} max={20} defaultValue={1} aria-label={L.party} placeholder={L.party} className={input} />}
+              <input name="name" required defaultValue={guest?.name} placeholder={L.name} className={input} />
+              <input name="email" type="email" defaultValue={guest?.email ?? ""} placeholder={L.email} className={input} />
+              {attending && events.length > 1 && (
+                <fieldset className="pt-4">
+                  <legend className="pb-2 text-sm text-[var(--t-muted)]">{x.which}</legend>
+                  <div className="flex flex-wrap gap-2">
+                    {events.map((e) => (
+                      <button type="button" key={e} onClick={() => setPicked((p) => ({ ...p, [e]: !p[e] }))} className={`rounded-full border px-3.5 py-1.5 text-sm transition ${picked[e] ? "border-[var(--t-accent)] bg-[var(--t-accent)] text-white" : "border-[var(--t-gold)]/60"}`}>{picked[e] ? "✓ " : ""}{e}</button>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+              {attending && (!guest || guest.plusOnes > 0) && <input name="party" type="number" min={1} max={guest ? 1 + guest.plusOnes : 20} defaultValue={1} aria-label={L.party} placeholder={L.party} className={input} />}
+              {attending && guest && guest.plusOnes > 0 && <input name="plusOne" placeholder={x.plusOne} className={input} />}
+              {attending && askMeal && (
+                <>
+                  <select name="meal" aria-label={x.meal} defaultValue="" className={`${input} appearance-none`}>
+                    <option value="" disabled>{x.meal}</option>
+                    {x.meals.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <input name="dietary" placeholder={x.dietary} className={input} />
+                </>
+              )}
               <textarea name="message" rows={2} placeholder={L.message} className={input} />
               {error && <p className="pt-2 text-sm text-red-700">{error}</p>}
               <button disabled={state === "sending"} className="mt-8 w-full rounded-full bg-[var(--t-ink)] py-4 text-[12px] uppercase tracking-[0.3em] text-[var(--t-bg)] transition hover:opacity-90 disabled:opacity-60">{state === "sending" ? "…" : L.send}</button>

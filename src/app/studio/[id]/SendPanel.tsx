@@ -155,6 +155,11 @@ export function SendPanel({ wedding, published, onPublish, onClose, realtimeUrl,
           </div>
         )}
 
+        <a href={`/studio/${wedding.id}/guests`} className="mt-6 flex items-center justify-between rounded-2xl border border-line bg-white/60 p-5 transition hover:border-rose">
+          <span><span className="block font-medium">Guest list & RSVPs</span><span className="text-sm text-muted">Households, per-event invites, meals, personal WhatsApp/Telegram links, reminders, CSV, guest photos</span></span>
+          <span className="text-rose">→</span>
+        </a>
+
         <div className="mt-6 rounded-2xl border border-line p-5">
           <p className="font-medium">Replies, live</p>
           <LiveRsvps weddingId={wedding.id} realtimeUrl={realtimeUrl} />

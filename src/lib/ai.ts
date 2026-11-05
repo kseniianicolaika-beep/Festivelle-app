@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Profile } from "./profile";
 import * as Occ from "./occasions";
+import { CURATED_ACCENTS, FONT_PAIRS, isFontPair, isHex } from "./editor-options";
 const { OCCASIONS, occasionOf } = Occ;
 // Optional per-occasion guidance written alongside the templates (occasions.ts).
 const occasionBrief = (Occ as { occasionBrief?: (o: Occ.OccasionId) => string }).occasionBrief;
@@ -135,6 +136,7 @@ The couple is editing ONE piece at a time (shown as "Active piece"). Pieces: ${O
 You may restyle the active piece via "design": {layout, motif, invocation, theme, texts {eyebrow, headline, body, footer, hashtag},
  items [{title, detail}] (menu courses or ceremony steps — write them in the guest language, culturally right), align (center|left),
  scale (0.8–1.3, name size), number (table number), eventIndex (which event an event card shows),
+ fonts (one of: ${Object.keys(FONT_PAIRS).join(", ")}), palette {accent: one of ${CURATED_ACCENTS.join(" ")}},
  sections {order: string[], hidden: string[]} (WEBSITE only; ids: ${Object.keys(SECTIONS).join(", ")}) — use it for "move the gallery up", "hide the schedule"; texts.body on the website = the "Additional information" section}.
 Paper layouts: ${Object.keys(PAPER_LAYOUTS).join(", ")}. Website layouts: ${Object.keys(SITE_LAYOUTS).join(", ")}.
 Motifs (curated line art): ${MOTIFS.map((m) => `${m.id} (${m.name})`).join(", ")}.
@@ -169,6 +171,9 @@ export function cleanDesign(d: unknown, kind?: Kind): Partial<Design> | undefine
   }
   if (Array.isArray(x.items)) out.items = x.items.slice(0, 12).filter((i) => i && typeof i === "object" && typeof (i as { title?: unknown }).title === "string").map((i) => ({ title: String((i as { title: string }).title).slice(0, 80), detail: (i as { detail?: unknown }).detail ? String((i as { detail: string }).detail).slice(0, 200) : undefined }));
   if (x.align === "center" || x.align === "left") out.align = x.align;
+  if (isFontPair(x.fonts)) out.fonts = x.fonts;
+  const pal = x.palette as { accent?: unknown } | undefined;
+  if (pal && isHex(pal.accent) && CURATED_ACCENTS.includes(pal.accent.toLowerCase())) out.palette = { accent: pal.accent.toLowerCase() };
   if (kind === "website" && x.sections) { const s = cleanSections(x.sections); if (s) out.sections = s; }
   if (typeof x.scale === "number") out.scale = Math.min(Math.max(x.scale, 0.7), 1.4);
   if (typeof x.number === "number") out.number = Math.max(1, Math.min(999, Math.round(x.number)));
@@ -176,9 +181,19 @@ export function cleanDesign(d: unknown, kind?: Kind): Partial<Design> | undefine
   return Object.keys(out).length ? out : undefined;
 }
 
-export async function aiTurn(profile: Profile, theme: string, history: { role: string; content: string }[], message: string, doc?: Doc | null) {
+function valueAt(path: string, profile: Profile, doc?: Doc | null): unknown {
+  if (path.startsWith("profile.")) return profile[path.slice(8) as keyof Profile];
+  if (path.startsWith("section:")) return path.slice(8);
+  let cur: unknown = doc?.design;
+  for (const k of path.split(".")) cur = cur && typeof cur === "object" ? (cur as Record<string, unknown>)[k] : undefined;
+  return cur ?? null;
+}
+
+export async function aiTurn(profile: Profile, theme: string, history: { role: string; content: string }[], message: string, doc?: Doc | null, selected?: string) {
   const today = new Date().toISOString().slice(0, 10);
-  const piece = doc ? `\nActive piece: ${doc.kind} (${KINDS[doc.kind].name}), layout ${doc.layout}, design ${JSON.stringify(doc.design)}` : "";
+  const piece = (doc ? `\nActive piece: ${doc.kind} (${KINDS[doc.kind].name}), layout ${doc.layout}, design ${JSON.stringify(doc.design)}` : "")
+    + (selected ? `\nSELECTED ELEMENT in the visual editor: "${selected}" (current value: ${JSON.stringify(valueAt(selected, profile, doc))}). When the person says this/that/it, they mean this element — change it via "design" (texts.*, items, palette, fonts, sections) or "patch" (profile.* fields).` : "")
+    + `\nMessages starting with ✎ are edits the person made by hand in the visual editor — respect them and don't undo them unless asked.`;
   const occ = occasionOf(profile);
   const occasion = occ === "wedding" ? "" : `\nOCCASION: this is a ${OCCASIONS[occ].name}, NOT a wedding. Adapt every question, word and design to it (partner1 = the honouree${OCCASIONS[occ].pair ? ", partner2 = their partner" : "; partner2 unused"}; "events" = the party's schedule; "age" = years being celebrated if relevant). Never say wedding/bride/groom.${occasionBrief ? "\n" + occasionBrief(occ) : ""}`;
   const out = await complete(SYSTEM + occasion, `Today is ${today}. Current suite theme: ${theme}.${piece}\nCurrent profile: ${JSON.stringify(profile)}\n\nCouple says: ${message}`, history);

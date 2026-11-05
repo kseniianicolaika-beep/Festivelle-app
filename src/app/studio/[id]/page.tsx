@@ -17,7 +17,7 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
   const wedding = await getWeddingForUser(id, user);
   if (!wedding) notFound();
   const [messages, docs, photos] = await Promise.all([
-    sql`SELECT id, role, content, chips FROM messages WHERE wedding_id = ${id} ORDER BY created_at` as unknown as Promise<Msg[]>,
+    sql`SELECT id, role, content, chips, kind FROM messages WHERE wedding_id = ${id} ORDER BY created_at` as unknown as Promise<Msg[]>,
     listDocs(id),
     sql`SELECT id, key, name, kind FROM assets WHERE workspace_id = ${wedding.workspace_id} AND kind <> 'logo' ORDER BY (wedding_id = ${id}) DESC NULLS LAST, created_at DESC LIMIT 120` as unknown as Promise<Asset[]>,
   ]);

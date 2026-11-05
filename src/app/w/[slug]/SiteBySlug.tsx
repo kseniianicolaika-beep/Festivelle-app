@@ -11,6 +11,8 @@ import type { Brand } from "@/lib/workspace";
 import type { Design } from "@/lib/templates";
 import { EnvelopeIntro } from "@/components/EnvelopeIntro";
 import { RsvpForm } from "./RsvpForm";
+import { GuestGallery } from "./GuestGallery";
+import { GuestAssistant } from "./GuestAssistant";
 import { isExpired } from "@/lib/commerce";
 import { displayNames, occasionOf, OCCASIONS } from "@/lib/occasions";
 
@@ -28,7 +30,7 @@ function Expired({ names }: { names: string }) {
 const media = (k?: string | null) => (k ? `/api/media?key=${encodeURIComponent(k)}` : null);
 
 // Shared by /w/[slug], personal subdomains (anna-mark.festivelle.com) and custom domains.
-export async function SiteBySlug({ slug }: { slug: string }) {
+export async function SiteBySlug({ slug, g }: { slug: string; g?: string | null }) {
   const w = await getWeddingBySlug(slug);
   if (!w) notFound();
   // No public link before payment: unpublished drafts are visible to their own team only (as a preview).
@@ -40,6 +42,17 @@ export async function SiteBySlug({ slug }: { slug: string }) {
   const fn = process.env.NEON_FUNCTION_CALENDAR_BASE_URL;
   const theme = themeById(site?.design.theme ?? w.theme);
   const [a, b] = coupleNames(w.profile);
+
+  // Personal link (?g=token): greet the guest, show only their events, pre-fill the RSVP.
+  const guest = g && /^[a-z0-9]{8,20}$/.test(g)
+    ? ((await sql`UPDATE guests SET opened_at = COALESCE(opened_at, now()) WHERE wedding_id = ${w.id} AND token = ${g}
+        RETURNING token, name, email, plus_ones, events`) as { token: string; name: string; email: string | null; plus_ones: number; events: string[] | null }[])[0]
+    : undefined;
+  const allEvents = w.profile.events ?? [];
+  const visibleEvents = guest?.events?.length ? allEvents.filter((e) => guest.events!.includes(e.name)) : allEvents;
+  const profile = { ...w.profile, events: visibleEvents };
+  const lang = w.profile.language ?? "en";
+  const guestUploads = (w.tier === "premium" || w.tier === "luxury") && occasionOf(w.profile) !== "greeting";
 
   // Agency white-label signature (brand kit) or a gentle credit for personal weddings.
   const brand = ws?.brand ?? {};
@@ -59,7 +72,7 @@ export async function SiteBySlug({ slug }: { slug: string }) {
     <>
       <EnvelopeIntro id={w.slug} initials={OCCASIONS[occasionOf(w.profile)].pair && w.profile.partner2 ? `${a[0]}${b[0]}` : a[0]} names={displayNames(w.profile)} label={t(w.profile.language).open} bg={theme.bg} accent={theme.accent} gold={theme.gold} ink={theme.ink} petals={petalColors(theme)} />
       <WeddingSite
-        profile={w.profile}
+        profile={profile}
         theme={theme}
         layout={site?.layout}
         design={site?.design}
@@ -68,8 +81,10 @@ export async function SiteBySlug({ slug }: { slug: string }) {
         heroUrl={media(w.profile.heroKey)}
         calendarUrl={fn && w.profile.events?.length ? `${fn.replace(/\/$/, "")}/?slug=${slug}` : null}
       >
-        <RsvpForm slug={slug} lang={w.profile.language ?? "en"} />
+        <RsvpForm slug={slug} lang={lang} guest={guest ? { token: guest.token, name: guest.name, email: guest.email, plusOnes: guest.plus_ones } : null} events={visibleEvents.map((e) => e.name)} />
       </WeddingSite>
+      {w.published && <GuestGallery slug={slug} canUpload={guestUploads} lang={lang} guestName={guest?.name} />}
+      {w.published && occasionOf(w.profile) !== "greeting" && <GuestAssistant slug={slug} g={guest?.token} lang={lang} />}
     </>
   );
 }
