@@ -126,4 +126,3 @@ export default async function TemplatePage({ params }: P) {
   );
 }
 
-export const instant = false;

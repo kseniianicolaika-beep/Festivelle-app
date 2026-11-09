@@ -20,4 +20,3 @@ export default async function TemplatesAdmin() {
   );
 }
 
-export const instant = false;

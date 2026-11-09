@@ -42,4 +42,3 @@ export default async function Join({ params }: { params: Promise<{ token: string
   );
 }
 
-export const instant = false;

@@ -28,4 +28,3 @@ export default async function DevStudio({ searchParams }: { searchParams: Promis
   return <Studio wedding={wedding} initialMessages={messages} initialDocs={docs} initialPhotos={[]} realtimeUrl="" capabilities={{ email: false, domains: false }} editable />;
 }
 
-export const instant = false;

@@ -212,4 +212,3 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ l
   );
 }
 
-export const instant = false;

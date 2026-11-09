@@ -102,4 +102,3 @@ export default async function Templates({ searchParams }: { searchParams: Promis
   );
 }
 
-export const instant = false;

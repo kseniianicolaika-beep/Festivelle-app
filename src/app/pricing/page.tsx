@@ -86,4 +86,3 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
   );
 }
 
-export const instant = false;

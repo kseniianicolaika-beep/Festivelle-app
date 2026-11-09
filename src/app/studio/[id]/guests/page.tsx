@@ -34,4 +34,3 @@ export default async function GuestsPage({ params }: { params: Promise<{ id: str
   );
 }
 
-export const instant = false;

@@ -15,4 +15,3 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   return <VideoStudio id={w.id} profile={w.profile} themeId={first?.design.theme ?? w.theme} motif={first?.design.motif} videoTier={isAdmin(user) ? "luxury" : w.video_tier ?? null} />;
 }
 
-export const instant = false;

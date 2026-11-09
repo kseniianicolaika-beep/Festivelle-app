@@ -108,4 +108,3 @@ export default async function Admin() {
 }
 
 // Per-request page (auth/DB) — render on demand.
-export const instant = false;

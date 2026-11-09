@@ -39,4 +39,3 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
 }
 
 // Per-request page (auth/DB) — render on demand.
-export const instant = false;

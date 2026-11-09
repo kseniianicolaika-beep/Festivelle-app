@@ -14,4 +14,3 @@ export default async function DevStudioNew({ searchParams }: { searchParams: Pro
   return <NewCelebrationView q={q} current={ws} list={[ws]} email="preview@festivelle.dev" admin={false} create={noop} />;
 }
 
-export const instant = false;

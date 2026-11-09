@@ -56,4 +56,3 @@ export default async function Billing() {
   );
 }
 
-export const instant = false;

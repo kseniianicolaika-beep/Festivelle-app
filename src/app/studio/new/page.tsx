@@ -53,4 +53,3 @@ export default async function NewCelebration({ searchParams }: { searchParams: P
   return <NewCelebrationView q={q} current={current} list={list} email={user.email} admin={isAdmin(user)} create={create} />;
 }
 
-export const instant = false;

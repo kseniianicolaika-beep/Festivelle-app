@@ -59,4 +59,3 @@ export default async function Orders() {
   );
 }
 
-export const instant = false;

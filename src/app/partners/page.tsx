@@ -46,4 +46,3 @@ export default async function PartnersPage({ searchParams }: { searchParams: Pro
   );
 }
 
-export const instant = false;

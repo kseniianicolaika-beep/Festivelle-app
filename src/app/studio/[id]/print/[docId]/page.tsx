@@ -28,4 +28,3 @@ export default async function Print({ params }: { params: Promise<{ id: string; 
   );
 }
 
-export const instant = false;

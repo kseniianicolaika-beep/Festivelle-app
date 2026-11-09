@@ -24,4 +24,3 @@ export default async function Invite({ params }: { params: Promise<{ slug: strin
 }
 
 // Per-request page (DB) — render on demand.
-export const instant = false;

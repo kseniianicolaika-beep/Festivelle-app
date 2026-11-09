@@ -30,4 +30,3 @@ export default async function LibraryPage() {
   );
 }
 
-export const instant = false;

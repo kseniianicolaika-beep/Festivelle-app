@@ -22,4 +22,3 @@ export default async function DevMusic({ searchParams }: { searchParams: Promise
     </main>
   );
 }
-export const instant = false;

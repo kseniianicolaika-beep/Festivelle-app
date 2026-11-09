@@ -77,4 +77,3 @@ export default async function SeoLanding({ params }: P) {
   );
 }
 
-export const instant = false;

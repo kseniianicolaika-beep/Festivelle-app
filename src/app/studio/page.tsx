@@ -92,4 +92,3 @@ export default async function Studio() {
 }
 
 // Per-request page (auth/DB) — render on demand.
-export const instant = false;

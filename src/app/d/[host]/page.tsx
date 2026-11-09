@@ -15,4 +15,3 @@ export default async function DomainSite({ params, searchParams }: { params: Pro
   return <SiteBySlug slug={rows[0].slug} g={(await searchParams).g} />;
 }
 
-export const instant = false;
