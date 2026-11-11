@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { TemplateDef } from "@/lib/catalog";
 import { OCCASIONS } from "@/lib/occasions";
 import { themeById } from "@/lib/themes";
-import { LiveTemplate, useInView } from "../Live";
+import { LiveTemplate, useInView } from "./Live";
 
 // A gallery wall of large posters. Each one plays its signature opening as it scrolls into view;
 // hover replays it and lets the website peek out on a phone.

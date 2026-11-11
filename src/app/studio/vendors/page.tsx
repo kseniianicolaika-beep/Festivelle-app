@@ -1,13 +1,21 @@
 import Link from "next/link";
 import { sql } from "@/lib/db";
 import { Wash } from "@/components/fx/Wash";
-import { SiteNav, SiteFooter } from "@/components/marketing/SiteNav";
+import { redirect } from "next/navigation";
+import { currentUser } from "@/lib/auth/server";
+import { isAdmin } from "@/lib/admin";
+import { activeWorkspace } from "@/lib/workspace";
+import { SITE_URL } from "@/lib/brand";
+import { StudioNav } from "../StudioNav";
 import { Reveal } from "@/components/fx/Reveal";
 
 type P = { id: string; name: string; category: string; city: string | null; blurb: string | null; offer: string | null; listing: string; url: string | null };
 
-// Trusted vendors. Sponsored & featured partners first; every outbound click is counted.
-export default async function PartnersPage({ searchParams }: { searchParams: Promise<{ cat?: string; city?: string }> }) {
+// Trusted vendors for signed-in hosts. Sponsored & featured partners first; every outbound click is counted.
+export default async function VendorsPage({ searchParams }: { searchParams: Promise<{ cat?: string; city?: string }> }) {
+  const user = await currentUser();
+  if (!user) redirect("/auth/sign-in?next=/studio/vendors");
+  const { current, list } = await activeWorkspace(user);
   const { cat, city } = await searchParams;
   const rows = (await sql`SELECT id, name, category, city, blurb, offer, listing, url FROM partners WHERE active
     AND (${cat ?? null}::text IS NULL OR category = ${cat ?? null}) AND (${city ?? null}::text IS NULL OR city ILIKE ${city ?? ""})
@@ -15,14 +23,14 @@ export default async function PartnersPage({ searchParams }: { searchParams: Pro
   const cats = [...new Set(((await sql`SELECT DISTINCT category FROM partners WHERE active ORDER BY 1`) as { category: string }[]).map((r) => r.category))];
   return (
     <main className="relative min-h-dvh overflow-x-clip">
-      <SiteNav />
       <Wash />
+      <StudioNav current={current} list={list} email={user.email} admin={isAdmin(user)} active="partners" />
       <div className="relative z-10 mx-auto max-w-[1320px] px-5 pb-28 pt-10 md:px-10 md:pt-16">
         <p className="kicker fade-up text-rose">Trusted by our hosts</p>
         <h1 className="t-hero mt-6 max-w-5xl">{["The", "people", "who", "make", "it"].map((w, i) => <span key={w}><span className="wm"><span style={{ ["--i" as string]: i }}>{w}</span></span> </span>)}<span className="wm"><span style={{ ["--i" as string]: 5 }}><em className="text-rose">magic</em></span></span></h1>
         <p className="t-lede fade-up mt-6 max-w-xl" style={{ ["--d" as string]: "400ms" }}>Planners, photographers, florists, bakers and venues — with offers for Festivelle hosts.</p>
         <div className="scroll-hide mt-12 flex gap-1.5 overflow-x-auto border-y border-line-strong py-3 text-[13px]">
-          <Link href="/partners" className={`whitespace-nowrap rounded-full px-4 py-1.5 ${!cat ? "bg-wine text-[#fbeee6]" : "text-ink-soft hover:bg-white/70"}`}>Everyone</Link>
+          <Link href="/studio/vendors" className={`whitespace-nowrap rounded-full px-4 py-1.5 ${!cat ? "bg-wine text-[#fbeee6]" : "text-ink-soft hover:bg-white/70"}`}>Everyone</Link>
           {cats.map((c) => <Link key={c} href={`?cat=${encodeURIComponent(c)}`} className={`whitespace-nowrap rounded-full px-4 py-1.5 capitalize ${cat === c ? "bg-wine text-[#fbeee6]" : "text-ink-soft hover:bg-white/70"}`}>{c}</Link>)}
         </div>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -39,9 +47,8 @@ export default async function PartnersPage({ searchParams }: { searchParams: Pro
           ))}
           {!rows.length && <p className="font-display text-2xl italic text-muted">Our partner circle is being curated.</p>}
         </div>
-        <Reveal><p className="t-lede mt-20 text-center">Are you a salon, planner, photographer, florist, bakery or shop? Write to us via the heart ♥ to join.</p></Reveal>
+        <Reveal><p className="t-lede mt-20 text-center">Are you a salon, planner, photographer, florist, bakery or shop? <a href={`${SITE_URL}/partners`} className="link-u text-rose">Join the partner programme</a>.</p></Reveal>
       </div>
-      <SiteFooter />
     </main>
   );
 }

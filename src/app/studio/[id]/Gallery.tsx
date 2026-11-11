@@ -7,7 +7,7 @@ import { WeddingSite } from "@/components/WeddingSite";
 import { themeById } from "@/lib/themes";
 import { Paper } from "@/components/designs/Paper";
 import { occasionOf } from "@/lib/occasions";
-import { ScaledFrame } from "@/components/marketing/Live";
+import { ScaledFrame } from "@/components/templates/Live";
 
 const GROUPS = ["Stationery", "Online", "Social", "Greetings", "On the day", "After"] as const;
 export type Pick = { kind: Kind; layout: string; theme: string; motif?: string; fonts?: string; template?: string };

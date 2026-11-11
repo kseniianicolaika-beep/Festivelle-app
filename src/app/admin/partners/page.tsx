@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { sql } from "@/lib/db";
 import { requireAdminPage } from "@/lib/admin-guard";
 import { AdminNav } from "../AdminNav";
@@ -37,7 +38,7 @@ export default async function Partners() {
       <AdminNav active="partners" email={user.email} />
       <div className="mx-auto max-w-6xl px-6 pb-24 pt-8">
         <h1 className="display text-5xl">Partner <em className="text-rose">programme</em></h1>
-        <p className="mt-3 max-w-2xl text-muted">Salons, planners, photographers, florists, bakeries and shops. Free or paid listings appear on <a href="/partners" className="underline">/partners</a>; each partner gets a referral link <code>/r/&lt;code&gt;</code> and can be tied to promo codes. Commission is tracked on every paid order they bring.</p>
+        <p className="mt-3 max-w-2xl text-muted">Salons, planners, photographers, florists, bakeries and shops. Free or paid listings appear on <Link href="/studio/vendors" className="underline">Vendors</Link> in the studio (applications arrive from festivelle.love/partners as inactive rows); each partner gets a referral link <code>/r/&lt;code&gt;</code> and can be tied to promo codes. Commission is tracked on every paid order they bring.</p>
         <div className="glass mt-8 rounded-3xl p-5"><p className="display mb-3 text-2xl">New partner</p><PartnerForm cats={cats} /></div>
         <div className="mt-8 space-y-4">
           {partners.map((p) => (

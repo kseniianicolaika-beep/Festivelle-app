@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Studio, type Msg } from "@/app/studio/[id]/Studio";
 import { templateById } from "@/lib/catalog";
 import { defaultDesign, type Doc, type Kind } from "@/lib/templates";
-import { sampleProfile } from "@/components/marketing/TemplatePreview";
+import { sampleProfile } from "@/components/templates/TemplatePreview";
 import type { Wedding } from "@/lib/db";
 import type { Profile } from "@/lib/profile";
 

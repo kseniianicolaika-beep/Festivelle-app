@@ -79,7 +79,7 @@ export function TemplatesEditor({ list, initial }: { list: Row[]; initial: Templ
               return (
                 <tr key={t.id} className={`border-b border-line/60 ${hidden ? "opacity-50" : ""}`}>
                   <td className="whitespace-nowrap px-4 py-2"><button onClick={() => move(t.id, -1)} className="px-1 text-muted hover:text-ink" aria-label="Up">↑</button><button onClick={() => move(t.id, 1)} className="px-1 text-muted hover:text-ink" aria-label="Down">↓</button></td>
-                  <td className="px-4 py-2"><a href={`/templates/${t.id}`} target="_blank" className="display text-lg hover:text-rose">{t.name}</a><span className="block font-mono text-[10px] text-muted">{t.id}</span></td>
+                  <td className="px-4 py-2"><a href={`https://festivelle.love/template/${t.id}`} target="_blank" className="display text-lg hover:text-rose">{t.name}</a><span className="block font-mono text-[10px] text-muted">{t.id}</span></td>
                   <td className="px-4 py-2">{t.occasion}</td>
                   <td className="px-4 py-2">{t.tier}</td>
                   <td className="px-4 py-2"><input type="checkbox" checked={a.featured.includes(t.id)} onChange={() => toggle("featured", t.id)} /></td>

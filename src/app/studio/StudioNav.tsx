@@ -10,7 +10,7 @@ const TABS = [
   { id: "library", href: "/studio/library", label: "Library" },
   { id: "settings", href: "/studio/settings", label: "Workspace" },
   { id: "billing", href: "/studio/billing", label: "Billing" },
-  { id: "partners", href: "/partners", label: "Vendors" },
+  { id: "partners", href: "/studio/vendors", label: "Vendors" },
 ] as const;
 
 // The studio's quiet masthead: wordmark + workspace on the left, a hairline tab rail, account on the right.

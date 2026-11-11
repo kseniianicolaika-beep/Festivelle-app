@@ -22,7 +22,7 @@ parties, housewarmings, special occasions and greetings. You talk; the design wr
 
 ## The customer journey
 
-1. **Choose** an occasion and a template at `/studio/new` (live previews in your own names), or just start talking.
+1. **Choose** a template on festivelle.love (or at `/studio/new` inside the app — live previews in your own names), or just start talking.
 2. **Personalise for free** — by chat (“move the gallery up”, “make it more royal”, “write it in Russian”) or by hand:
    names, texts, photos & gallery, dates, venue, colours/themes, fonts/layouts, motifs, and sections
    (intro, invitation, details, schedule, venue, gallery, RSVP, additional info — add, hide, reorder). Preview on
@@ -83,9 +83,14 @@ payment and publishing. Shared data lives in **`src/lib/taxonomy.json`** (6 cate
 | `/auth/sign-in` · `/auth/sign-up` · `/auth/forgot-password` | Auth; password recovery by 6-digit email code |
 | `POST /api/subscribe` · `/api/partners/apply` · `/api/contact` | JSON, CORS for festivelle.love. Newsletter → Sequenzy subscriber (tags `newsletter`, `lang-*`, `region-*`); partner application → inactive row in `partners` (approve in `/admin/partners`) + emails; contact → owner email. All are also kept in `inquiries`. |
 
-The app's old public pages (`/`, `/templates`, `/templates/<id>`, `/pricing`, `/invitations/<slug>`) forward to
-festivelle.love (`next.config.ts`); signed-in visitors to `/` go to `/studio`, and `/?preview=1` still shows the
-legacy landing. Dashboard views: `/studio?view=invitations|websites|videos`, `/studio/saved`.
+**The app has no landing page or public marketing pages.** festivelle.love is the only public front door.
+`/` sends signed-in people to `/studio` and everyone else to `/auth/sign-in` (which links back to the website). The
+app's old public URLs forward to the website in `next.config.ts` (`/templates`, `/templates/<id>` → `/template/<id>`,
+`/pricing`, the 11 `/invitations/<slug>` pages → matching `/celebrate/…`), so old links and indexed pages still land
+somewhere useful. `robots.txt` disallows everything; there is no sitemap. The vendor directory is a signed-in studio
+page, `/studio/vendors` (old `/partners` redirects there); partner *applications* come from festivelle.love/partners.
+Dashboard views: `/studio?view=invitations|websites|videos`, `/studio/saved`. The 404 page and expired-celebration
+page link back to festivelle.love. Template preview components used by the studio live in `src/components/templates/`.
 
 ## Email (Sequenzy)
 
@@ -199,8 +204,9 @@ say “make this warmer” or “translate this to Russian”; the AI receives t
 
 ## Marketing & SEO
 
-Public marketing, SEO pages and the sitemap now live on **festivelle.love** (see the contract above); the app's own
-sitemap is empty and its old public pages redirect there.
+All marketing, SEO pages and the sitemap live on **festivelle.love** (repo `Akshay115/web-times`). The app is
+deliberately not indexed (see the contract above). Change the public URL with `SITE_URL` (default
+`https://festivelle.love`, read in `src/lib/brand.ts` and `next.config.ts`).
 
 ## Workspaces & agencies (earlier pieces)
 

@@ -1,9 +1,7 @@
 import type { MetadataRoute } from "next";
-import { siteOrigin } from "@/components/marketing/seo";
 
+// The app is not for search engines: public pages (templates, occasions, pricing) are indexed on
+// festivelle.love, and celebration sites are private to their guests.
 export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: [{ userAgent: "*", allow: "/", disallow: ["/studio", "/admin", "/api", "/w/", "/d/", "/join", "/auth", "/r/", "/go/"] }],
-    sitemap: `${siteOrigin()}/sitemap.xml`,
-  };
+  return { rules: [{ userAgent: "*", disallow: "/" }] };
 }

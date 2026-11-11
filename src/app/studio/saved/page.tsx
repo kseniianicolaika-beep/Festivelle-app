@@ -9,7 +9,7 @@ import { templateById, type TemplateDef } from "@/lib/catalog";
 import { OCCASIONS } from "@/lib/occasions";
 import { Wash } from "@/components/fx/Wash";
 import { Reveal } from "@/components/fx/Reveal";
-import { PosterWall } from "@/components/marketing/landing/PosterWall";
+import { PosterWall } from "@/components/templates/PosterWall";
 import { StudioNav } from "../StudioNav";
 
 const SITE = (process.env.SITE_URL || "https://festivelle.love").replace(/\/$/, "");

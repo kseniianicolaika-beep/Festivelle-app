@@ -6,7 +6,7 @@ import { WeddingSite } from "@/components/WeddingSite";
 import { coupleNames, formatDate } from "@/lib/profile";
 import { petalColors, themeById } from "@/lib/themes";
 import { t } from "@/lib/i18n";
-import { BRAND } from "@/lib/brand";
+import { BRAND, SITE_URL } from "@/lib/brand";
 import type { Brand } from "@/lib/workspace";
 import type { Design } from "@/lib/templates";
 import { EnvelopeIntro } from "@/components/EnvelopeIntro";
@@ -26,6 +26,7 @@ function Expired({ names }: { names: string }) {
       <h1 className="display mt-4 max-w-xl text-5xl leading-tight">This celebration has become <em className="text-rose">a memory</em></h1>
       <p className="mt-5 max-w-md text-muted">The hosts’ page is resting now. If you’re one of them, sign in to bring it back with a hosting extension.</p>
       <p className="script mt-8 text-3xl text-rose">with love</p>
+      <a href={SITE_URL} className="mt-10 text-xs uppercase tracking-[0.25em] text-muted hover:text-rose">Made with Festivelle — create your own</a>
     </main>
   );
 }
