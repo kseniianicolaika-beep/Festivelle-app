@@ -4,9 +4,11 @@
 
 | | |
 |---|---|
-| **Live app** | https://wedding-builder-two.vercel.app |
+| **Live app** | https://hugs.festivelle.love (also https://wedding-builder-two.vercel.app) |
+| **Marketing site** | https://festivelle.love — repo `Akshay115/web-times` (local folder `Filen/Projects/Festivelle`) |
 | **Repository** | https://github.com/Akshay115/Festivelle-app |
-| **Hosting** | Vercel project `lyvena/wedding-builder`, auto-deploys from `main` |
+| **Hosting** | Two Vercel projects auto-deploy from `main`: `festivelle/festivelle-app` (serves hugs.festivelle.love) and `lyvena/wedding-builder` |
+| **Email** | Sequenzy (project “Festivelle”) — auth codes, invitations, reminders, notifications, newsletter list |
 | **Backend** | Neon project `raspy-union-09496702`, branch `production` (Postgres, Auth, Object Storage, Realtime, Functions) |
 | **AI** | Experiential Labs free models (GPT-6 Luna → DeepSeek V4.1 Flash) → OpenRouter free → rule engine |
 | **Payments** | YooKassa (Russia, RUB) · Razorpay (India INR + international USD) · NOWPayments (crypto, worldwide) |
@@ -14,8 +16,9 @@
 | **Platform owner** | akshay@lyvena.xyz (permanent admin) |
 
 A conversation-first, romantic platform for ready-made invitation websites, video invitations and digital greetings —
-weddings, engagements, anniversaries, birthdays, children's parties, baby showers and greetings. You talk; the design
-writes itself. **Designing is free**; you pay once only to publish (get your own link) or download.
+weddings, engagements, anniversaries, birthdays, children's parties, baby showers, bridal showers, rehearsal dinners,
+gender reveals, baptisms, corporate parties, conferences, product launches, networking events, holiday parties, dinner
+parties, housewarmings, special occasions and greetings. You talk; the design writes itself. **Designing is free**; you pay once only to publish (get your own link) or download.
 
 ## The customer journey
 
@@ -38,7 +41,8 @@ writes itself. **Designing is free**; you pay once only to publish (get your own
 | Websites | Basic | Premium | Luxury |
 |---|---|---|---|
 | Weddings & engagements | Essential $19 · ₹999 · 1 490 ₽ | Signature $39 · ₹1 999 · 2 990 ₽ | Heirloom $79 · ₹3 999 · 5 990 ₽ |
-| Birthdays, kids, baby showers, anniversaries | Simple $7 · ₹399 · 590 ₽ | Signature $15 · ₹799 · 1 190 ₽ | Grand $29 · ₹1 499 · 2 290 ₽ |
+| Birthdays, kids, baby & family events, parties, holidays, anniversaries | Simple $7 · ₹399 · 590 ₽ | Signature $15 · ₹799 · 1 190 ₽ | Grand $29 · ₹1 499 · 2 290 ₽ |
+| Business events (corporate, conference, launch, networking) | Event $29 · ₹1 999 · 2 490 ₽ | Professional $59 · ₹3 999 · 4 990 ₽ | Enterprise $119 · ₹7 999 · 9 990 ₽ |
 | Digital greetings | Card $3 | Keepsake $5 | Luxe $9 |
 | Video invitations / greetings | Classic $12 | Cinematic $24 | Heirloom film $39 |
 
@@ -62,6 +66,36 @@ Stripe and PayPal don't serve Russian cards, so checkout offers the right acquir
 
 Until a provider's keys are set, checkout says payments in that currency open soon. Admins can **comp** a package
 from `/admin`. Alternatives if YooKassa isn't possible: Robokassa or CloudPayments (same adapter shape).
+
+## Website ↔ app contract (festivelle.love → hugs.festivelle.love)
+
+The public site owns browsing (categories, templates, pricing, AI Creator, partners); the app owns accounts, editing,
+payment and publishing. Shared data lives in **`src/lib/taxonomy.json`** (6 categories → subcategories → app occasions
++ tags, 24 holidays with dates per region, 3 products). The site copies it and the catalog with
+`node scripts/sync-catalog.mjs ../Festivelle-app` (run from the website folder).
+
+| Link / endpoint | What it does |
+|---|---|
+| `/start?template=<id>&product=invite\|website\|video&tier=basic\|premium\|luxury&lang=ru` | Signs up/in if needed (keeps the destination), creates the celebration with that template, opens the right editor (`?piece=` or `/video`); the chosen package is highlighted when publishing |
+| `/start?idea=<text>&o=<occasion>&product=…` | AI Creator: creates the celebration (occasion guessed from the idea when missing) and sends the idea as the first chat message |
+| `/start?o=<occasion>&tag=<tag>&product=…` · `/start?product=…` | In-app template picker, filtered (tag-matched templates first) |
+| `/save?template=<id>` | Adds to **My saved templates** (`/studio/saved`) |
+| `/auth/sign-in` · `/auth/sign-up` · `/auth/forgot-password` | Auth; password recovery by 6-digit email code |
+| `POST /api/subscribe` · `/api/partners/apply` · `/api/contact` | JSON, CORS for festivelle.love. Newsletter → Sequenzy subscriber (tags `newsletter`, `lang-*`, `region-*`); partner application → inactive row in `partners` (approve in `/admin/partners`) + emails; contact → owner email. All are also kept in `inquiries`. |
+
+The app's old public pages (`/`, `/templates`, `/templates/<id>`, `/pricing`, `/invitations/<slug>`) forward to
+festivelle.love (`next.config.ts`); signed-in visitors to `/` go to `/studio`, and `/?preview=1` still shows the
+legacy landing. Dashboard views: `/studio?view=invitations|websites|videos`, `/studio/saved`.
+
+## Email (Sequenzy)
+
+All mail goes through Sequenzy (`src/lib/sequenzy.ts`); Resend is only an optional fallback. The key is read from
+`SEQUENZY_API_KEY`, or — for the Festivelle team's Vercel project, whose env we can't edit — from the Neon row
+`settings.key = 'integrations'` (`value.sequenzy_api_key`). Sender: `EMAIL_FROM` (default
+`Festivelle <hello@festivelle.sequenzymail.com>`); owner notifications go to `OWNER_EMAIL` (default kseniia@festivelle.love).
+Neon Auth sends verification and password-reset codes through the webhook `POST /api/email/auth-webhook`
+(Ed25519-verified; configure with `neon neon-auth config webhook update`). Check sends with
+`sequenzy email-sends list`.
 
 ## Admin dashboard (`/admin`)
 
@@ -91,13 +125,21 @@ OpenRouter free models, then to the rule-based designer, so the chat never break
 and greetings (3 options). `/api/ai/visual` generates illustrations when `IMAGE_MODEL` is set (image models are not in
 the free plan). Upgrade to Experiential Labs Pro ($20/mo, 10×) when traffic grows.
 
-## Templates (64 bespoke, hand-composed suites)
+## Templates (90 bespoke, hand-composed suites)
 
 Every catalog template (`src/lib/catalog.ts`) is now its **own module** in `src/templates/<group>/<id>/` with a
 bespoke `Site.tsx` (the published website) and `Card.tsx` (all 12 paper/social kinds), hand-built SVG artwork, its own
 type system and a signature opening. `src/templates/types.ts` is the contract; `src/templates/registry.ts` maps
 catalog ids → modules; `Paper.tsx` / `WeddingSite.tsx` dispatch to them when `design.template` is set (older pieces
 fall back to the generic layouts).
+
+New-occasion suites live in their own catalog files and template groups: `catalog-events.ts` → `src/templates/events`
+(bridal shower, rehearsal dinner, gender reveal, baptism), `catalog-business.ts` → `src/templates/business`
+(corporate party, conference, product launch, networking — price group `business`), `catalog-social.ts` →
+`src/templates/social` (dinner party, housewarming, special occasion), `catalog-holidays.ts` → `src/templates/holidays`
+(Diwali, Christmas, New Year, Easter, Holi, Eid parties). `tags` place templates under subcategories and holidays
+(e.g. `milestone`, `first-birthday`, `diwali`); the `TAGS` map in `catalog.ts` tags the original suites. Keep CSS class
+names prefixed per group, and round trig-computed SVG coordinates (server/client float digits differ).
 
 | Group | Templates |
 |---|---|
@@ -157,9 +199,8 @@ say “make this warmer” or “translate this to Russian”; the AI receives t
 
 ## Marketing & SEO
 
-Public landing page at `/` (EN/RU/HI, live “talk → it designs itself” demo), `/templates` with filters,
-`/templates/<id>` SEO pages (JSON-LD, Open Graph), `/invitations/<slug>` occasion/culture landing pages,
-`sitemap.xml` and `robots.txt`. Signed-in users get a “Your studio” button.
+Public marketing, SEO pages and the sitemap now live on **festivelle.love** (see the contract above); the app's own
+sitemap is empty and its old public pages redirect there.
 
 ## Workspaces & agencies (earlier pieces)
 
@@ -227,7 +268,7 @@ npm run dev
 
 ## Deploy (Vercel)
 
-The GitHub repo `Akshay115/Festivelle-app` is connected to the Vercel project `lyvena/wedding-builder` (https://wedding-builder-two.vercel.app). Every push to `main` deploys. Environment variables live in Vercel (Production and Preview). For each new app domain:
+The GitHub repo `Akshay115/Festivelle-app` is connected to two Vercel projects: `festivelle/festivelle-app` (the client's team; serves **hugs.festivelle.love**) and `lyvena/wedding-builder` (https://wedding-builder-two.vercel.app). Every push to `main` deploys both; deployment results show as commit statuses on GitHub. Set `SITE_URL=https://festivelle.love` where you can (it's also the default). Environment variables live in Vercel (Production and Preview). For each new app domain:
 
 ```bash
 neon neon-auth domain add https://<domain>
@@ -245,7 +286,7 @@ neon realtime enable --allowed-origin https://<domain>
 
 ## Data model
 
-`settings` (pricing + template curation JSON), `doc_versions`, `collab_signal`, `collab_presence`, `guest_photos`, guests (+ household, events, token, plus-ones), `orders`, `promos`, `partners`, `credits`, `ai_usage`, `weddings` (+ `tier`, `video_tier`, `activated_at`, `expires_at`, `subdomain`; occasion in `profile.occasion`), `workspaces`, `members` (workspace × user × role), `invites`, `weddings` (belong to a workspace, with an optional client name), `documents` (one per piece: kind, layout, design JSON), `assets` (workspace library), `messages`, `guests`, `rsvps`. Run `node --env-file=.env.local scripts/migrate.mjs`. It's idempotent and backfills workspaces and starter pieces for older data.
+`saved_templates` (user × template), `inquiries` (newsletter / partner / contact submissions), `settings` (pricing + template curation JSON + `integrations`), `doc_versions`, `collab_signal`, `collab_presence`, `guest_photos`, guests (+ household, events, token, plus-ones), `orders`, `promos`, `partners`, `credits`, `ai_usage`, `weddings` (+ `tier`, `video_tier`, `activated_at`, `expires_at`, `subdomain`; occasion in `profile.occasion`), `workspaces`, `members` (workspace × user × role), `invites`, `weddings` (belong to a workspace, with an optional client name), `documents` (one per piece: kind, layout, design JSON), `assets` (workspace library), `messages`, `guests`, `rsvps`. Run `node --env-file=.env.local scripts/migrate.mjs`. It's idempotent and backfills workspaces and starter pieces for older data.
 
 ## Roadmap
 

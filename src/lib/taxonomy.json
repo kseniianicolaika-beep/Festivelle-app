@@ -1,0 +1,110 @@
+{
+  "_comment": "SHARED CONTRACT (app + website). Source of truth lives in the app (src/lib/taxonomy.json); the website copies it with scripts/sync-catalog.mjs. A subcategory shows every catalog template whose occasion is in `occasions` AND (when `tags` is set) that carries at least one of `tags`. `fallback` = occasions shown as 'also works beautifully' when the exact list is short. `occasion` = what the app creates when the visitor starts from this page.",
+  "regions": [
+    { "id": "IN", "name": { "en": "India", "ru": "Индия" } },
+    { "id": "RU", "name": { "en": "Russia", "ru": "Россия" } },
+    { "id": "INTL", "name": { "en": "International", "ru": "Другие страны" } }
+  ],
+  "products": [
+    { "id": "invite", "slug": "digital-invitations", "name": { "en": "Digital Invitations", "ru": "Цифровые приглашения" }, "line": { "en": "Design and celebrate.", "ru": "Создавайте и празднуйте." } },
+    { "id": "website", "slug": "event-websites", "name": { "en": "Event Websites", "ru": "Сайты мероприятий" }, "line": { "en": "Create a personal event website.", "ru": "Личный сайт вашего события." } },
+    { "id": "video", "slug": "video-invitations", "name": { "en": "Video Invitations", "ru": "Видео-приглашения" }, "line": { "en": "Bring your celebrations to life.", "ru": "Оживите ваш праздник." } }
+  ],
+  "categories": [
+    {
+      "slug": "weddings-engagements", "icon": "rings",
+      "name": { "en": "Weddings & Engagements", "ru": "Свадьбы и помолвки" },
+      "intro": { "en": "Wedding invitations, engagement announcements and every gathering in between — with a matching website, live RSVPs and a video invitation.", "ru": "Свадебные приглашения, объявления о помолвке и все праздники между ними — с сайтом, онлайн-RSVP и видео-приглашением в едином стиле." },
+      "subs": [
+        { "slug": "wedding", "name": { "en": "Wedding Invitations", "ru": "Свадебные приглашения" }, "occasion": "wedding", "occasions": ["wedding"] },
+        { "slug": "engagement-party", "name": { "en": "Engagement Party", "ru": "Помолвка" }, "occasion": "engagement", "occasions": ["engagement"] },
+        { "slug": "bridal-shower", "name": { "en": "Bridal Shower", "ru": "Девичник" }, "occasion": "bridal_shower", "occasions": ["bridal_shower"], "fallback": ["engagement"] },
+        { "slug": "rehearsal-dinner", "name": { "en": "Rehearsal Dinner", "ru": "Предсвадебный ужин" }, "occasion": "rehearsal_dinner", "occasions": ["rehearsal_dinner"], "fallback": ["dinner_party"] },
+        { "slug": "wedding-anniversary", "name": { "en": "Wedding Anniversary", "ru": "Годовщина свадьбы" }, "occasion": "anniversary", "occasions": ["anniversary"] },
+        { "slug": "engagement-anniversary", "name": { "en": "Engagement Anniversary", "ru": "Годовщина помолвки" }, "occasion": "anniversary", "occasions": ["anniversary", "engagement"], "tags": ["engagement-anniversary"], "fallback": ["anniversary"] }
+      ]
+    },
+    {
+      "slug": "birthdays", "icon": "cake",
+      "name": { "en": "Birthdays — Adults & Kids", "ru": "Дни рождения — взрослые и дети" },
+      "intro": { "en": "From a candlelit thirtieth to a balloon-filled seventh — birthday invitations and party pages that feel like the person celebrating.", "ru": "От вечера при свечах на тридцатилетие до праздника с шарами на семилетие — приглашения и страницы, похожие на именинника." },
+      "subs": [
+        { "slug": "adult-birthdays", "name": { "en": "Adult Birthdays", "ru": "Для взрослых" }, "occasion": "birthday", "occasions": ["birthday"] },
+        { "slug": "kids-birthdays", "name": { "en": "Kids Birthdays", "ru": "Детские дни рождения" }, "occasion": "kids", "occasions": ["kids"] },
+        { "slug": "milestone-birthdays", "name": { "en": "Milestone Birthdays", "ru": "Юбилеи" }, "occasion": "birthday", "occasions": ["birthday"], "tags": ["milestone"], "fallback": ["birthday"] }
+      ]
+    },
+    {
+      "slug": "baby-kids", "icon": "baby",
+      "name": { "en": "Baby & Kids", "ru": "Малыши и дети" },
+      "intro": { "en": "Baby showers, gender reveals, christenings and first birthdays — soft, joyful designs for the smallest guests of honour.", "ru": "Бэби-шауэр, гендер-пати, крестины и первый день рождения — нежные и радостные дизайны для самых маленьких виновников торжества." },
+      "subs": [
+        { "slug": "baby-shower", "name": { "en": "Baby Shower", "ru": "Бэби-шауэр" }, "occasion": "baby_shower", "occasions": ["baby_shower"] },
+        { "slug": "gender-reveal", "name": { "en": "Gender Reveal", "ru": "Гендер-пати" }, "occasion": "gender_reveal", "occasions": ["gender_reveal"], "fallback": ["baby_shower"] },
+        { "slug": "baptism", "name": { "en": "Baptism", "ru": "Крестины" }, "occasion": "baptism", "occasions": ["baptism"], "fallback": ["baby_shower"] },
+        { "slug": "first-birthday", "name": { "en": "First Birthday", "ru": "Первый день рождения" }, "occasion": "kids", "occasions": ["kids"], "tags": ["first-birthday"], "fallback": ["kids"] }
+      ]
+    },
+    {
+      "slug": "business-corporate", "icon": "briefcase",
+      "name": { "en": "Business & Corporate Events", "ru": "Деловые и корпоративные события" },
+      "intro": { "en": "Polished invitations and event websites for company parties, conferences, launches and networking evenings — with registration built in.", "ru": "Стильные приглашения и сайты для корпоративов, конференций, запусков и нетворкинга — с регистрацией гостей." },
+      "subs": [
+        { "slug": "corporate-party", "name": { "en": "Corporate Party", "ru": "Корпоратив" }, "occasion": "corporate_party", "occasions": ["corporate_party"], "fallback": ["networking", "product_launch"] },
+        { "slug": "conference", "name": { "en": "Conference", "ru": "Конференция" }, "occasion": "conference", "occasions": ["conference"], "fallback": ["networking"] },
+        { "slug": "product-launch", "name": { "en": "Product Launch", "ru": "Запуск продукта" }, "occasion": "product_launch", "occasions": ["product_launch"], "fallback": ["corporate_party"] },
+        { "slug": "networking-event", "name": { "en": "Networking Event", "ru": "Нетворкинг" }, "occasion": "networking", "occasions": ["networking"], "fallback": ["conference"] }
+      ]
+    },
+    {
+      "slug": "holidays-seasonal", "icon": "tree",
+      "name": { "en": "Upcoming & Seasonal Celebrations", "ru": "Праздники и сезонные события" },
+      "intro": { "en": "Diwali, Christmas, New Year, Easter and every festival in between — party invitations and greetings for the celebrations coming up where you live.", "ru": "Дивали, Рождество, Новый год, Пасха и все праздники между ними — приглашения и открытки к ближайшим праздникам в вашем регионе." },
+      "dynamic": true,
+      "subs": []
+    },
+    {
+      "slug": "party-social", "icon": "glasses",
+      "name": { "en": "Party & Social Events", "ru": "Вечеринки и встречи" },
+      "intro": { "en": "Dinner parties, anniversaries, housewarmings and every reason to gather — invitations that set the mood before the door opens.", "ru": "Ужины, годовщины, новоселья и любой повод собраться — приглашения, которые создают настроение заранее." },
+      "subs": [
+        { "slug": "dinner-party", "name": { "en": "Dinner Party", "ru": "Званый ужин" }, "occasion": "dinner_party", "occasions": ["dinner_party"], "fallback": ["rehearsal_dinner"] },
+        { "slug": "anniversary", "name": { "en": "Anniversary", "ru": "Годовщина" }, "occasion": "anniversary", "occasions": ["anniversary"], "canonical": "weddings-engagements/wedding-anniversary" },
+        { "slug": "housewarming", "name": { "en": "Housewarming", "ru": "Новоселье" }, "occasion": "housewarming", "occasions": ["housewarming"], "fallback": ["dinner_party"] },
+        { "slug": "special-occasions", "name": { "en": "Special Occasions", "ru": "Особые случаи" }, "occasion": "special", "occasions": ["special"], "fallback": ["dinner_party", "greeting"] }
+      ]
+    }
+  ],
+  "holidayKinds": [
+    { "id": "religious", "name": { "en": "Religious & Cultural Holidays", "ru": "Религиозные и культурные праздники" } },
+    { "id": "international", "name": { "en": "International & National Holidays", "ru": "Международные и государственные праздники" } },
+    { "id": "seasonal", "name": { "en": "Seasonal Celebrations", "ru": "Сезонные праздники" } }
+  ],
+  "holidays": [
+    { "slug": "new-year", "name": { "en": "New Year", "ru": "Новый год" }, "kind": "international", "regions": ["IN", "RU", "INTL"], "dates": ["2026-12-31", "2027-12-31", "2028-12-31"], "tags": ["new-year"] },
+    { "slug": "orthodox-christmas", "name": { "en": "Orthodox Christmas", "ru": "Рождество" }, "kind": "religious", "regions": ["RU"], "dates": ["2027-01-07", "2028-01-07", "2029-01-07"], "tags": ["orthodox-christmas", "christmas"] },
+    { "slug": "valentines-day", "name": { "en": "Valentine's Day", "ru": "День святого Валентина" }, "kind": "international", "regions": ["IN", "RU", "INTL"], "dates": ["2027-02-14", "2028-02-14"], "tags": ["valentines-day"] },
+    { "slug": "goa-carnival", "name": { "en": "Goa Carnival", "ru": "Карнавал в Гоа" }, "kind": "religious", "regions": ["IN"], "dates": ["2027-02-06", "2028-02-26"], "tags": ["carnival"] },
+    { "slug": "maslenitsa", "name": { "en": "Maslenitsa", "ru": "Масленица" }, "kind": "religious", "regions": ["RU"], "dates": ["2027-03-08", "2028-02-21"], "tags": ["maslenitsa"] },
+    { "slug": "womens-day", "name": { "en": "International Women's Day", "ru": "8 Марта" }, "kind": "international", "regions": ["RU", "INTL", "IN"], "dates": ["2027-03-08", "2028-03-08"], "tags": ["womens-day"] },
+    { "slug": "eid-al-fitr", "name": { "en": "Eid al-Fitr", "ru": "Ураза-байрам" }, "kind": "religious", "regions": ["IN", "INTL", "RU"], "dates": ["2027-03-10", "2028-02-27"], "approx": true, "tags": ["eid"] },
+    { "slug": "holi", "name": { "en": "Holi", "ru": "Холи" }, "kind": "religious", "regions": ["IN"], "dates": ["2027-03-22", "2028-03-11"], "tags": ["holi"] },
+    { "slug": "easter", "name": { "en": "Easter", "ru": "Пасха (западная)" }, "kind": "religious", "regions": ["INTL", "IN"], "dates": ["2027-03-28", "2028-04-16"], "tags": ["easter"] },
+    { "slug": "orthodox-easter", "name": { "en": "Orthodox Easter", "ru": "Пасха" }, "kind": "religious", "regions": ["RU"], "dates": ["2027-05-02", "2028-04-16"], "tags": ["orthodox-easter", "easter"] },
+    { "slug": "mothers-day", "name": { "en": "Mother's Day", "ru": "День матери" }, "kind": "international", "regions": ["IN", "INTL", "RU"], "dates": ["2027-05-09", "2028-05-14"], "regionDates": { "RU": ["2026-11-29", "2027-11-28", "2028-11-26"] }, "tags": ["mothers-day"] },
+    { "slug": "russia-day", "name": { "en": "Russia Day", "ru": "День России" }, "kind": "international", "regions": ["RU"], "dates": ["2027-06-12", "2028-06-12"], "tags": ["national-day"] },
+    { "slug": "fathers-day", "name": { "en": "Father's Day", "ru": "День отца" }, "kind": "international", "regions": ["IN", "INTL"], "dates": ["2027-06-20", "2028-06-18"], "regionDates": { "RU": ["2026-10-18", "2027-10-17", "2028-10-15"] }, "tags": ["fathers-day"] },
+    { "slug": "independence-day-india", "name": { "en": "Independence Day (India)", "ru": "День независимости Индии" }, "kind": "international", "regions": ["IN"], "dates": ["2027-08-15", "2028-08-15"], "tags": ["national-day"] },
+    { "slug": "ganesh-chaturthi", "name": { "en": "Ganesh Chaturthi", "ru": "Ганеш Чатуртхи" }, "kind": "religious", "regions": ["IN"], "dates": ["2027-09-04", "2028-08-23"], "approx": true, "tags": ["ganesh-chaturthi"] },
+    { "slug": "navratri", "name": { "en": "Navratri & Dussehra", "ru": "Наваратри и Душера" }, "kind": "religious", "regions": ["IN"], "dates": ["2027-09-30", "2028-09-18"], "approx": true, "tags": ["navratri"] },
+    { "slug": "halloween", "name": { "en": "Halloween", "ru": "Хэллоуин" }, "kind": "international", "regions": ["INTL", "RU", "IN"], "dates": ["2026-10-31", "2027-10-31", "2028-10-31"], "tags": ["halloween"] },
+    { "slug": "diwali", "name": { "en": "Diwali", "ru": "Дивали" }, "kind": "religious", "regions": ["IN", "INTL", "RU"], "dates": ["2027-10-29", "2028-10-17"], "tags": ["diwali"] },
+    { "slug": "thanksgiving", "name": { "en": "Thanksgiving", "ru": "День благодарения" }, "kind": "international", "regions": ["INTL"], "dates": ["2026-11-26", "2027-11-25", "2028-11-23"], "tags": ["thanksgiving"] },
+    { "slug": "christmas", "name": { "en": "Christmas", "ru": "Рождество (25 декабря)" }, "kind": "religious", "regions": ["IN", "INTL", "RU"], "dates": ["2026-12-25", "2027-12-25", "2028-12-25"], "tags": ["christmas"] },
+    { "slug": "spring-celebrations", "name": { "en": "Spring Celebrations", "ru": "Весенние праздники" }, "kind": "seasonal", "regions": ["IN", "RU", "INTL"], "dates": ["2027-03-20", "2028-03-20"], "tags": ["spring"] },
+    { "slug": "summer-celebrations", "name": { "en": "Summer Celebrations", "ru": "Летние праздники" }, "kind": "seasonal", "regions": ["IN", "RU", "INTL"], "dates": ["2027-06-21", "2028-06-21"], "tags": ["summer"] },
+    { "slug": "autumn-harvest", "name": { "en": "Autumn & Harvest", "ru": "Осень и урожай" }, "kind": "seasonal", "regions": ["IN", "RU", "INTL"], "dates": ["2027-09-22", "2028-09-22"], "tags": ["autumn"] },
+    { "slug": "winter-celebrations", "name": { "en": "Winter Celebrations", "ru": "Зимние праздники" }, "kind": "seasonal", "regions": ["IN", "RU", "INTL"], "dates": ["2026-12-01", "2027-12-01", "2028-12-01"], "tags": ["winter", "christmas", "new-year"] }
+  ],
+  "holidayMatch": { "occasions": ["holiday", "greeting"], "fallback": ["holiday"] }
+}

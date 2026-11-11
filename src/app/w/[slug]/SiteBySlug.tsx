@@ -84,7 +84,7 @@ export async function SiteBySlug({ slug, g }: { slug: string; g?: string | null 
         heroUrl={media(w.profile.heroKey)}
         calendarUrl={fn && w.profile.events?.length ? `${fn.replace(/\/$/, "")}/?slug=${slug}` : null}
       >
-        <RsvpForm slug={slug} lang={lang} guest={guest ? { token: guest.token, name: guest.name, email: guest.email, plusOnes: guest.plus_ones } : null} events={visibleEvents.map((e) => e.name)} />
+        <RsvpForm slug={slug} lang={lang} guest={guest ? { token: guest.token, name: guest.name, email: guest.email, plusOnes: guest.plus_ones } : null} events={visibleEvents.map((e) => e.name)} audience={OCCASIONS[occasionOf(w.profile)].group === "business" ? "business" : OCCASIONS[occasionOf(w.profile)].pair ? "couple" : "hosts"} />
       </WeddingSite>
       {w.published && <GuestGallery slug={slug} canUpload={guestUploads} lang={lang} guestName={guest?.name} />}
       {/* Generative ambient score — off until a guest taps "♪ Play our song". */}

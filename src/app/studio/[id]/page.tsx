@@ -10,8 +10,9 @@ import { emailEnabled } from "@/lib/email";
 import { vercelEnabled } from "@/lib/vercel";
 import type { Asset } from "@/lib/upload-client";
 
-export default async function StudioPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function StudioPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ piece?: string; idea?: string; tier?: string }> }) {
   const { id } = await params;
+  const sp = await searchParams;
   const user = await currentUser();
   if (!user) redirect(`/auth/sign-in?next=/studio/${id}`);
   const wedding = await getWeddingForUser(id, user);
@@ -30,9 +31,12 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
       initialDocs={docs}
       initialPhotos={photos}
       realtimeUrl={process.env.NEON_REALTIME_URL ?? ""}
-      capabilities={{ email: emailEnabled(), domains: vercelEnabled() }}
+      capabilities={{ email: await emailEnabled(), domains: vercelEnabled() }}
       editable={canEdit(wedding.role)}
       adminView={isAdmin(user) && wedding.owner_id !== user.id}
+      initialPiece={typeof sp.piece === "string" ? sp.piece : undefined}
+      idea={typeof sp.idea === "string" && messages.length <= 1 ? sp.idea.slice(0, 1000) : undefined}
+      tierHint={sp.tier === "basic" || sp.tier === "premium" || sp.tier === "luxury" ? sp.tier : undefined}
     />
     </>
   );

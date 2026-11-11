@@ -17,6 +17,7 @@ import { Reveal } from "@/components/fx/Reveal";
 type Row = { id: string; slug: string; owner_id: string; owner_email: string | null; profile: Profile; theme: string; published: boolean; plan: string; tier: string | null; expires_at: string | null; subdomain: string | null; rsvps: number; attending: number; guests: number; updated_at: string };
 
 export default async function Admin() {
+  const mailOn = await emailEnabled();
   const user = await currentUser();
   if (!user) redirect("/auth/sign-in?next=/admin");
   if (!isAdmin(user)) notFound();
@@ -60,7 +61,7 @@ export default async function Admin() {
           {Object.entries(PROVIDERS).filter(([id]) => id !== "test").map(([id, p]) => (
             <span key={id} className={`rounded-full px-3 py-1 ${p.enabled() ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{p.note.split("· ")[1]}: {p.enabled() ? "live" : "no keys"}</span>
           ))}
-          <span className={`rounded-full px-3 py-1 ${emailEnabled() ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>Email: {emailEnabled() ? "connected" : "not configured"}</span>
+          <span className={`rounded-full px-3 py-1 ${mailOn ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>Email: {mailOn ? "connected" : "not configured"}</span>
         </div>
 
         <Reveal delay={0.2}>

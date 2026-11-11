@@ -4,7 +4,10 @@ import { nameParts, occasionInvite } from "./occasions";
 import type { Theme } from "./themes";
 import { t } from "./i18n";
 
-export const emailEnabled = () => !!process.env.RESEND_API_KEY;
+import { sendTransactional, sequenzyEnabled } from "./sequenzy";
+
+// Transactional email goes through Sequenzy; Resend stays only as an optional fallback.
+export const emailEnabled = async () => (await sequenzyEnabled()) || !!process.env.RESEND_API_KEY;
 
 export function inviteHtml(p: Profile, th: Theme, url: string, guest: string) {
   const [a, b] = nameParts(p);
@@ -39,6 +42,7 @@ export function reminderHtml(p: Profile, th: Theme, url: string, guest: string) 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 export async function sendEmail(to: string, subject: string, html: string) {
+  if (await sequenzyEnabled()) return sendTransactional({ to, subject, html });
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },

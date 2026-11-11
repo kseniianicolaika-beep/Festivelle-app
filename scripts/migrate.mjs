@@ -6,6 +6,20 @@ if (!url) throw new Error("DATABASE_URL missing");
 const sql = neon(url);
 
 const statements = [
+  `CREATE TABLE IF NOT EXISTS saved_templates (
+    user_id text NOT NULL,
+    template_id text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, template_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS inquiries (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    kind text NOT NULL CHECK (kind IN ('newsletter','partner','contact')),
+    email text NOT NULL,
+    name text,
+    payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
   `CREATE TABLE IF NOT EXISTS weddings (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id text NOT NULL,

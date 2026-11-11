@@ -25,7 +25,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Every guest gets a personal link (greets them by name, shows their events, pre-fills the RSVP).
     const row = await upsertGuest(id, { name: guest.name.slice(0, 120) || guest.email.split("@")[0], email: guest.email.toLowerCase() });
     const url = guestLink(w, origin, row.token!);
-    if (emailEnabled()) {
+    if (await emailEnabled()) {
       try {
         await sendEmail(guest.email, `${names} — you're invited`, inviteHtml(w.profile, theme, url, guest.name));
         status = "sent";
@@ -38,7 +38,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await sql`UPDATE guests SET status = CASE WHEN status IN ('attending','declined') THEN status ELSE ${status} END,
       sent_at = COALESCE(${status === "sent" ? new Date().toISOString() : null}::timestamptz, sent_at) WHERE id = ${row.id}`;
   }
-  const message = emailEnabled()
+  const message = (await emailEnabled())
     ? `Sent ${sent} invitation${sent === 1 ? "" : "s"}.${failed.length ? ` Couldn't reach: ${failed.join(", ")}` : ""}`
     : `Saved ${valid.length} guest${valid.length === 1 ? "" : "s"}. Email delivery will start once it's configured.`;
   return Response.json({ message, sent, saved: valid.length });

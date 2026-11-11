@@ -10,10 +10,25 @@ const X = {
   hi: { dear: "प्रिय", which: "आप किन समारोहों में आएँगे?", meal: "भोजन पसंद", meals: ["कोई पसंद नहीं", "शाकाहारी", "मांसाहारी", "वीगन", "जैन", "बच्चों का भोजन"], dietary: "एलर्जी या आहार संबंधी ज़रूरतें", plusOne: "आपके अतिथि का नाम" },
 } as const;
 
+// Who receives replies: a couple (weddings…), hosts (parties) or organisers (business events = registration).
+export type Audience = "couple" | "hosts" | "business";
+const AUD: Record<Exclude<Audience, "couple">, Record<"en" | "ru" | "hi", { message: string; thanks: string; rsvp?: string; attend?: string; yes?: string; no?: string }>> = {
+  hosts: {
+    en: { message: "A note for the hosts", thanks: "Thank you — your reply is on its way to the hosts." },
+    ru: { message: "Пожелание хозяевам праздника", thanks: "Спасибо — ваш ответ отправлен хозяевам праздника." },
+    hi: { message: "मेज़बानों के लिए संदेश", thanks: "धन्यवाद — आपका जवाब मेज़बानों तक पहुँच रहा है।" },
+  },
+  business: {
+    en: { message: "Anything the organisers should know?", thanks: "Thank you — your registration is confirmed.", rsvp: "Registration", attend: "Reserve your place", yes: "I'll attend", no: "Can't make it" },
+    ru: { message: "Что важно знать организаторам?", thanks: "Спасибо — ваша регистрация подтверждена.", rsvp: "Регистрация", attend: "Забронируйте место", yes: "Я приду", no: "Не смогу" },
+    hi: { message: "आयोजकों के लिए कोई जानकारी?", thanks: "धन्यवाद — आपका पंजीकरण हो गया है।", rsvp: "पंजीकरण", attend: "अपनी जगह सुरक्षित करें", yes: "मैं आऊँगा/आऊँगी", no: "नहीं आ सकूँगा/सकूँगी" },
+  },
+};
+
 export type RsvpGuest = { token: string; name: string; email: string | null; plusOnes: number };
 
-export function RsvpForm({ slug, lang, guest, events = [], askMeal = true }: { slug: string; lang: Lang; guest?: RsvpGuest | null; events?: string[]; askMeal?: boolean }) {
-  const L = t(lang);
+export function RsvpForm({ slug, lang, guest, events = [], askMeal = true, audience = "couple" }: { slug: string; lang: Lang; guest?: RsvpGuest | null; events?: string[]; askMeal?: boolean; audience?: Audience }) {
+  const L = { ...t(lang), ...(audience === "couple" ? {} : AUD[audience][lang] ?? AUD[audience].en) };
   const x = X[lang] ?? X.en;
   const [attending, setAttending] = useState<boolean | null>(null);
   const [picked, setPicked] = useState<Record<string, boolean>>(() => Object.fromEntries(events.map((e) => [e, true])));

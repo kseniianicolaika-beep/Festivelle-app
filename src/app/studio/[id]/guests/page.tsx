@@ -26,7 +26,7 @@ export default async function GuestsPage({ params }: { params: Promise<{ id: str
           events={(w.profile.events ?? []).map((e) => e.name)}
           names={displayNames(w.profile)}
           lang={w.profile.language ?? "en"}
-          email={emailEnabled()}
+          email={await emailEnabled()}
           guestPhotos={w.tier === "premium" || w.tier === "luxury"}
         />
       </div>

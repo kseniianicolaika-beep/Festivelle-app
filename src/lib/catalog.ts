@@ -20,10 +20,16 @@ export type TemplateDef = {
   fonts: string; // font pairing id
   reveal?: string; // signature animation id
   tier: "basic" | "premium" | "luxury"; // suggested package
+  tags?: string[]; // subcategory / holiday tags (see src/lib/taxonomy.json), e.g. "milestone", "first-birthday", "diwali"
   sample: { partner1: string; partner2?: string; date: string; venue: string; city: string; language?: "en" | "ru" | "hi"; age?: number };
 };
 
-export const CATALOG: TemplateDef[] = [
+import { EVENTS_CATALOG } from "./catalog-events";
+import { HOLIDAYS_CATALOG } from "./catalog-holidays";
+import { BUSINESS_CATALOG } from "./catalog-business";
+import { SOCIAL_CATALOG } from "./catalog-social";
+
+const BASE: TemplateDef[] = [
   { id: "ashwem-dusk", name: "Ashwem Dusk", occasion: "wedding", culture: "goan", styles: ["beach", "romantic"], blurb: "Golden hour on a North Goa beach, palms in silhouette and bare feet in warm sand.", theme: "konkan-sunset", motif: "palms", paperLayout: "classic", siteLayout: "cinematic", fonts: "classic", reveal: "letterbox", tier: "premium", sample: {"partner1": "Anya", "partner2": "Rohan", "date": "2027-02-14", "venue": "Ashwem Beach", "city": "Goa", "language": "en"} },
   { id: "lisbon-letter", name: "Lisbon Letter", occasion: "wedding", culture: "goan", styles: ["vintage", "romantic"], blurb: "A Goan Catholic wedding told like a letter sealed in an old Portuguese villa.", theme: "azulejo", motif: "azulejo", paperLayout: "editorial", siteLayout: "letter", fonts: "lora", reveal: "unfold", tier: "premium", sample: {"partner1": "Clara", "partner2": "Joaquim", "date": "2027-01-23", "venue": "Our Lady of the Immaculate Conception", "city": "Panjim", "language": "en"} },
   { id: "maharani", name: "Maharani", occasion: "wedding", culture: "indian", styles: ["royal"], blurb: "Candlelit palace arches, marigold and the grandeur of a Rajput courtyard.", theme: "rajwada", motif: "arch", paperLayout: "jharokha", siteLayout: "arch", fonts: "royal", reveal: "curtain", tier: "luxury", sample: {"partner1": "Aditi", "partner2": "Kabir", "date": "2027-02-06", "venue": "Taj Fort Aguada", "city": "Goa", "language": "en"} },
@@ -87,6 +93,18 @@ export const CATALOG: TemplateDef[] = [
   { id: "welcome-little-one", name: "Welcome, Little One", occasion: "greeting", culture: "universal", styles: ["playful", "minimal"], blurb: "A rattle and stars to welcome a new baby.", theme: "cloud-nursery", motif: "rattle", paperLayout: "monogram", siteLayout: "playful", fonts: "playful", reveal: "pop", tier: "basic", sample: {"partner1": "Baby Zoya", "date": "", "venue": "", "city": "", "language": "en"} },
   { id: "memory-portrait", name: "Memory Portrait", occasion: "greeting", culture: "universal", styles: ["vintage", "romantic"], blurb: "A treasured photograph, framed with love.", theme: "love-letter", motif: "ribbon", paperLayout: "polaroid", siteLayout: "gallery", fonts: "playfair", reveal: "float", tier: "basic", sample: {"partner1": "Papa", "date": "", "venue": "", "city": "", "language": "en"} },
 ];
+
+// Tags that place existing suites under the client's subcategories.
+const TAGS: Record<string, string[]> = {
+  "forty-fabulous": ["milestone"], "fifty-garden": ["milestone"], "sixty-blessings": ["milestone"], "dirty-thirty": ["milestone"],
+  "sleepy-moon": ["first-birthday"],
+  "festival-of-lights": ["diwali"], "eid-mubarak": ["eid"], "merry-christmas": ["christmas", "orthodox-christmas", "winter"],
+  "s-novym-godom": ["new-year", "winter"], maslenitsa: ["maslenitsa", "spring"],
+  "with-gratitude": ["thanksgiving", "mothers-day", "fathers-day"], "love-letter": ["valentines-day", "womens-day"],
+  "wisteria-promise": ["engagement-anniversary"], "snapshots-of-us": ["engagement-anniversary"],
+};
+
+export const CATALOG: TemplateDef[] = [...BASE.map((t) => (TAGS[t.id] ? { ...t, tags: [...(t.tags ?? []), ...TAGS[t.id]] } : t)), ...EVENTS_CATALOG, ...BUSINESS_CATALOG, ...SOCIAL_CATALOG, ...HOLIDAYS_CATALOG];
 
 export const templateById = (id: string) => CATALOG.find((t) => t.id === id) ?? null;
 export const templatesForOccasion = (o: OccasionId) => CATALOG.filter((t) => t.occasion === o);

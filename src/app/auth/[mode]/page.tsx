@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AuthForm } from "./AuthForm";
+import { ForgotForm } from "./ForgotForm";
 import { BRAND } from "@/lib/brand";
 import { Aurora } from "@/components/fx/Aurora";
 import { Petals } from "@/components/fx/Petals";
@@ -9,12 +10,12 @@ import { Wordmark } from "@/components/brand/Wordmark";
 import Link from "next/link";
 
 export function generateStaticParams() {
-  return [{ mode: "sign-in" }, { mode: "sign-up" }];
+  return [{ mode: "sign-in" }, { mode: "sign-up" }, { mode: "forgot-password" }];
 }
 
 export default async function AuthPage({ params }: { params: Promise<{ mode: string }> }) {
   const { mode } = await params;
-  if (mode !== "sign-in" && mode !== "sign-up") notFound();
+  if (mode !== "sign-in" && mode !== "sign-up" && mode !== "forgot-password") notFound();
   return (
     <main className="grain relative grid min-h-dvh lg:grid-cols-[1.15fr_1fr]">
       {/* Romance panel */}
@@ -27,7 +28,7 @@ export default async function AuthPage({ params }: { params: Promise<{ mode: str
           <p className="kicker mb-8 text-[#c5a06a]">Made with love in Goa</p>
           <Verses />
         </div>
-        <p className="relative text-sm text-[#fbeee6]/55">Invitations · Save-the-dates · Wedding websites · Live RSVPs</p>
+        <p className="relative text-sm text-[#fbeee6]/55">Invitations · Event websites · Video invitations · Live RSVPs</p>
       </section>
 
       {/* Form */}
@@ -36,9 +37,19 @@ export default async function AuthPage({ params }: { params: Promise<{ mode: str
         <div className="lg:hidden"><Petals count={12} className="absolute" /></div>
         <div className="glass rise relative w-full max-w-[420px] rounded-[32px] p-9 md:p-11">
           <Link href="/" className="mb-6 flex justify-center lg:hidden" aria-label={BRAND.name}><Wordmark size="text-[1.8rem]" /></Link>
-          <h1 className="t-h2 text-center">{mode === "sign-up" ? <>Begin your <em className="text-rose">story</em></> : <>Welcome <em className="text-rose">back</em></>}</h1>
-          <p className="mt-2 text-center text-sm text-muted">{mode === "sign-up" ? "Your designs are saved as you talk." : "Your love story is right where you left it."}</p>
-          <AuthForm mode={mode} />
+          {mode === "forgot-password" ? (
+            <>
+              <h1 className="t-h2 text-center">Reset your <em className="text-rose">password</em></h1>
+              <p className="mt-2 text-center text-sm text-muted">We&apos;ll email you a 6-digit code.</p>
+              <ForgotForm />
+            </>
+          ) : (
+            <>
+              <h1 className="t-h2 text-center">{mode === "sign-up" ? <>Begin your <em className="text-rose">story</em></> : <>Welcome <em className="text-rose">back</em></>}</h1>
+              <p className="mt-2 text-center text-sm text-muted">{mode === "sign-up" ? "Your designs are saved as you talk." : "Your celebration is right where you left it."}</p>
+              <AuthForm mode={mode} />
+            </>
+          )}
         </div>
       </section>
     </main>

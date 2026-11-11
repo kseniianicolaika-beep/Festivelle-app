@@ -4,7 +4,7 @@ import { CATALOG } from "./catalog";
 
 // ── Everything a wedding needs, as editable "pieces" ──
 export const KINDS = {
-  website: { name: "Wedding website", group: "Online", ratio: "web", blurb: "Your story, events, travel and RSVP" },
+  website: { name: "Event website", group: "Online", ratio: "web", blurb: "Your story, events, travel and RSVP" },
   invite: { name: "Invitation", group: "Stationery", ratio: "5/7", blurb: "The main wedding invitation" },
   save: { name: "Save the date", group: "Stationery", ratio: "5/7", blurb: "Announce the date early" },
   event: { name: "Event card", group: "Stationery", ratio: "5/7", blurb: "Haldi, mehendi, sangeet, ZAGS, banquet…" },

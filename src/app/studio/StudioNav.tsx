@@ -6,6 +6,7 @@ import { SignOut } from "./SignOut";
 
 const TABS = [
   { id: "weddings", href: "/studio", label: "Celebrations" },
+  { id: "saved", href: "/studio/saved", label: "Saved templates" },
   { id: "library", href: "/studio/library", label: "Library" },
   { id: "settings", href: "/studio/settings", label: "Workspace" },
   { id: "billing", href: "/studio/billing", label: "Billing" },

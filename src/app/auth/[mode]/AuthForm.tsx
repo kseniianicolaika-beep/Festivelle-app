@@ -25,6 +25,9 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
     window.location.href = next?.startsWith("/") ? next : "/studio";
   }
 
+  // Switching between sign-in and sign-up keeps ?next= (e.g. a template chosen on festivelle.love).
+  const keepNext = (e: React.MouseEvent<HTMLAnchorElement>) => { e.preventDefault(); window.location.assign(e.currentTarget.pathname + window.location.search); };
+
   async function google() {
     setPending(true);
     const next = new URLSearchParams(window.location.search).get("next");
@@ -42,10 +45,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
       {mode === "sign-up" && <input name="name" placeholder="Your name" className="field" autoComplete="name" />}
       <input name="email" type="email" required placeholder="Email" className="field" autoComplete="email" />
       <input name="password" type="password" required minLength={8} placeholder="Password (8+ characters)" className="field" autoComplete={mode === "sign-up" ? "new-password" : "current-password"} />
+      {mode === "sign-in" && <p className="text-right text-xs"><Link className="text-muted underline hover:text-ink" href="/auth/forgot-password">Forgot password?</Link></p>}
       {error && <p role="alert" className="text-sm text-rose">{error}</p>}
       <button disabled={pending} className="btn btn-dark w-full disabled:opacity-60">{pending ? "One moment…" : mode === "sign-up" ? "Create account" : "Sign in"}</button>
       <p className="pt-4 text-center text-sm text-muted">
-        {mode === "sign-up" ? <>Already have an account? <Link className="text-ink underline" href="/auth/sign-in">Sign in</Link></> : <>New here? <Link className="text-ink underline" href="/auth/sign-up">Create an account</Link></>}
+        {mode === "sign-up" ? <>Already have an account? <Link className="text-ink underline" href="/auth/sign-in" onClick={keepNext}>Sign in</Link></> : <>New here? <Link className="text-ink underline" href="/auth/sign-up" onClick={keepNext}>Create an account</Link></>}
       </p>
     </form>
   );

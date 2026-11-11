@@ -11,7 +11,7 @@ export const isTier = (t: unknown): t is Tier => TIERS.includes(t as Tier);
 
 export type Package = { name: string; price: Money; features: string[]; sections: number; galleryPhotos: number; pieces: number; customDomain: boolean };
 export type Pricing = {
-  packages: Record<"wedding" | "celebration" | "greeting", Record<Tier, Package>>;
+  packages: Record<"wedding" | "celebration" | "greeting" | "business", Record<Tier, Package>>;
   video: Record<Tier, { name: string; price: Money; features: string[]; seconds: number; formats: string[] }>;
   hosting: { maxMonths: number; afterEventDays: number; extensions: { id: string; months: number; label: string; price: Money }[] };
   credits: { packs: { id: string; credits: number; price: Money }[]; freeTextPerDay: number; textCost: number; freeVisuals: number; visualCost: number; signupCredits: number };
@@ -31,6 +31,11 @@ export const DEFAULT_PRICING: Pricing = {
       basic: { name: "Simple", price: m(7, 399, 590), sections: 4, galleryPhotos: 8, pieces: 2, customDomain: false, features: ["Your own link", "4 sections, 8-photo gallery", "RSVP"] },
       premium: { name: "Signature", price: m(15, 799, 1190), sections: 8, galleryPhotos: 40, pieces: 6, customDomain: false, features: ["All sections, 40-photo gallery", "Invitation, story & thank-you cards", "Email invitations"] },
       luxury: { name: "Grand", price: m(29, 1499, 2290), sections: 8, galleryPhotos: 150, pieces: 12, customDomain: true, features: ["150-photo gallery", "Every piece", "Custom domain"] },
+    },
+    business: {
+      basic: { name: "Event", price: m(29, 1999, 2490), sections: 6, galleryPhotos: 20, pieces: 4, customDomain: false, features: ["Your own event link", "Invitation, event website & social post", "Registration with live replies", "Email invitations"] },
+      premium: { name: "Professional", price: m(59, 3999, 4990), sections: 8, galleryPhotos: 60, pieces: 12, customDomain: false, features: ["Everything in Event", "Agenda, speakers & sponsors sections", "All 12 pieces: badges, signage, menus", "Guest reminders"] },
+      luxury: { name: "Enterprise", price: m(119, 7999, 9990), sections: 8, galleryPhotos: 300, pieces: 12, customDomain: true, features: ["Everything in Professional", "Your own domain, connected for you", "Brand colours & fonts", "Priority concierge"] },
     },
     greeting: {
       basic: { name: "Card", price: m(3, 149, 249), sections: 1, galleryPhotos: 1, pieces: 1, customDomain: false, features: ["No watermark", "HD download & share link"] },

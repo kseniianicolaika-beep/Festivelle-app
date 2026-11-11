@@ -11,7 +11,9 @@ import { bespokeFor } from "@/templates/registry";
 import { Reveal } from "@/components/fx/Reveal";
 import { StudioNav } from "../StudioNav";
 
-export type NewQuery = { o?: string; occasion?: string; template?: string; culture?: string; style?: string };
+export type NewQuery = { o?: string; occasion?: string; template?: string; culture?: string; style?: string; tag?: string; product?: string; tier?: string };
+
+const PRODUCT_NAME: Record<string, string> = { invite: "digital invitation", website: "event website", video: "video invitation" };
 
 const CULTURES: Record<Culture, string> = { indian: "Indian", russian: "Russian", goan: "Goan", muslim: "Muslim", fusion: "Russian–Indian", western: "Western", universal: "Universal" };
 
@@ -27,11 +29,16 @@ export function NewCelebrationView({ q, current, list, email, admin, create }: {
   const oq = q.o ?? q.occasion;
   const occasion = chosen?.occasion ?? (isOccasion(oq) ? oq : null);
   const agency = current.kind === "agency";
-  const inOcc = occasion ? CATALOG.filter((t) => t.occasion === occasion) : [];
+  const allInOcc = occasion ? CATALOG.filter((t) => t.occasion === occasion) : [];
+  // A subcategory tag (e.g. "milestone", "diwali") narrows the wall when it matches anything.
+  const tagged = q.tag ? allInOcc.filter((t) => t.tags?.includes(q.tag!)) : [];
+  const inOcc = tagged.length ? [...tagged, ...allInOcc.filter((t) => !tagged.includes(t))] : allInOcc;
+  const product = q.product && PRODUCT_NAME[q.product] ? q.product : undefined;
+  const carry = <><input type="hidden" name="product" value={product ?? ""} /><input type="hidden" name="tier" value={q.tier ?? ""} /></>;
   const cultures = [...new Set(inOcc.map((t) => t.culture))];
   const styles = [...new Set(inOcc.flatMap((t) => t.styles))];
   const shown = inOcc.filter((t) => (!q.culture || t.culture === q.culture) && (!q.style || t.styles.includes(q.style as Style)));
-  const href = (extra: Record<string, string | undefined>) => `/studio/new?${new URLSearchParams(Object.entries({ o: occasion ?? undefined, culture: q.culture, style: q.style, ...extra }).filter(([, v]) => v) as [string, string][])}`;
+  const href = (extra: Record<string, string | undefined>) => `/studio/new?${new URLSearchParams(Object.entries({ o: occasion ?? undefined, culture: q.culture, style: q.style, tag: q.tag, product, tier: q.tier, ...extra }).filter(([, v]) => v) as [string, string][])}`;
   const chip = (on: boolean) => `whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] capitalize transition ${on ? "bg-wine text-[#fbeee6] shadow" : "text-ink-soft hover:bg-white/70"}`;
   const clientField = agency ? <input name="client" placeholder="Client (e.g. Anya & Rohan, Feb 2027)" className="min-w-0 flex-1 rounded-full bg-transparent px-5 py-3 text-[15px] outline-none placeholder:text-muted/70" /> : null;
 
@@ -51,6 +58,7 @@ export function NewCelebrationView({ q, current, list, email, admin, create }: {
                 <p className="fade-up mt-5 text-sm text-muted" style={{ ["--d" as string]: "450ms" }}>{bespokeFor(chosen.id)?.opening ? <>Opens with <em className="font-display text-base">{bespokeFor(chosen.id)!.opening}</em> · </> : null}{themeById(chosen.theme).name} · suggested {chosen.tier}</p>
                 <form action={create} className="fade-up mt-9 flex flex-col gap-2 rounded-[30px] border border-white/70 bg-white/60 p-2 shadow-[0_24px_60px_-40px_rgba(74,20,36,.6)] backdrop-blur-xl sm:flex-row sm:items-center" style={{ ["--d" as string]: "600ms" }}>
                   <input type="hidden" name="template" value={chosen.id} />
+                  {carry}
                   {clientField ?? <p className="flex-1 px-5 py-3 font-display text-lg italic text-muted">Your names go in next — just say them.</p>}
                   <button className="btn btn-dark !px-7 !py-4">Begin with {chosen.name}<span className="btn-arrow">→</span></button>
                 </form>
@@ -71,16 +79,16 @@ export function NewCelebrationView({ q, current, list, email, admin, create }: {
           <>
             <p className="kicker fade-up text-rose">Begin something beautiful</p>
             <h1 className="t-hero mt-5">{["What", "are", "we"].map((w, i) => <span key={w}><span className="wm"><span style={{ ["--i" as string]: i }}>{w}</span></span> </span>)}<span className="wm"><span style={{ ["--i" as string]: 3 }}><em className="text-rose">celebrating?</em></span></span></h1>
-            <p className="t-lede fade-up mt-6 max-w-xl" style={{ ["--d" as string]: "400ms" }}>{CATALOG.length} complete suites. Choose an occasion, then simply talk — or edit right on the design. Free until you publish.</p>
+            <p className="t-lede fade-up mt-6 max-w-xl" style={{ ["--d" as string]: "400ms" }}>{product ? <>Making a <em>{PRODUCT_NAME[product]}</em>. </> : null}{CATALOG.length} complete suites. Choose an occasion, then simply talk — or edit right on the design. Free until you publish.</p>
             <div className="mt-14 grid grid-cols-2 gap-x-5 gap-y-12 md:grid-cols-3 md:gap-x-8 lg:grid-cols-4">
-              {OCCASION_IDS.map((id, i) => {
+              {OCCASION_IDS.filter((id) => CATALOG.some((x) => x.occasion === id)).map((id, i) => {
                 const occ = OCCASIONS[id];
                 const inOccasion = CATALOG.filter((x) => x.occasion === id);
                 const t = inOccasion.find((x) => bespokeFor(x.id)) ?? inOccasion[0];
                 const th = themeById(t.theme);
                 return (
                   <Reveal key={id} delay={(i % 4) * 0.06}>
-                    <Link href={`/studio/new?o=${id}`} className="group block">
+                    <Link href={`/studio/new?o=${id}${product ? `&product=${product}` : ""}${q.tier ? `&tier=${q.tier}` : ""}`} className="group block">
                       <div className="relative overflow-hidden rounded-[6px] px-[13%] py-[13%]" style={{ background: `radial-gradient(80% 70% at 50% 35%, ${th.gold}30, transparent 70%), ${th.bg}` }}>
                         <div className="poster-lift poster"><Preview t={t} /></div>
                       </div>
@@ -106,6 +114,7 @@ export function NewCelebrationView({ q, current, list, email, admin, create }: {
               </div>
               <form action={create} className="fade-up flex flex-col gap-2 rounded-[30px] border border-white/70 bg-white/60 p-2 shadow-[0_24px_60px_-40px_rgba(74,20,36,.6)] backdrop-blur-xl sm:flex-row sm:items-center" style={{ ["--d" as string]: "600ms" }}>
                 <input type="hidden" name="occasion" value={occasion} />
+                {carry}
                 {agency ? clientField : <p className="flex-1 px-5 py-3 font-display text-lg italic text-muted">Not sure yet? Just start talking.</p>}
                 <button className="btn btn-dark !px-6 !py-3.5">Start the conversation<span className="btn-arrow">→</span></button>
               </form>

@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if ("error" in g) return g.error;
   const w = g.wedding;
   if (!w.published) return Response.json({ error: "Publish your site first." }, { status: 400 });
-  if (!emailEnabled()) return Response.json({ error: "Email delivery isn’t configured yet — send reminders by WhatsApp or Telegram from the guest list." }, { status: 501 });
+  if (!(await emailEnabled())) return Response.json({ error: "Email delivery isn’t configured yet — send reminders by WhatsApp or Telegram from the guest list." }, { status: 501 });
   await ensureTokens(id);
   const pending = (await sql`
     SELECT g.id, g.name, g.email, g.token FROM guests g

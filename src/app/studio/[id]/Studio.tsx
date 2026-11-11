@@ -62,16 +62,17 @@ function Ink({ text, animate }: { text: string; animate: boolean }) {
   );
 }
 
-type Props = { wedding: Wedding; initialMessages: Msg[]; initialDocs: Doc[]; initialPhotos: Asset[]; realtimeUrl: string; capabilities: { email: boolean; domains: boolean }; editable: boolean; adminView?: boolean };
+type Props = { wedding: Wedding; initialMessages: Msg[]; initialDocs: Doc[]; initialPhotos: Asset[]; realtimeUrl: string; capabilities: { email: boolean; domains: boolean }; editable: boolean; adminView?: boolean; initialPiece?: string; idea?: string; tierHint?: string };
 
-export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, realtimeUrl, capabilities, editable, adminView }: Props) {
+export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, realtimeUrl, capabilities, editable, adminView, initialPiece, idea, tierHint }: Props) {
   const [messages, setMessages] = useState(initialMessages);
   const [fresh, setFresh] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile>(wedding.profile);
   const [themeId, setThemeId] = useState(wedding.theme);
   const [published, setPublished] = useState(wedding.published);
   const [docs, setDocs] = useState(initialDocs);
-  const [activeId, setActiveId] = useState(initialDocs[0]?.id);
+  // ?piece=website|invite (from festivelle.love product links) opens that piece first.
+  const [activeId, setActiveId] = useState((initialDocs.find((d) => d.kind === initialPiece) ?? initialDocs[0])?.id);
   const [photos, setPhotos] = useState(initialPhotos);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -115,6 +116,17 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
     // Braces matter: newer browsers return a Promise from scrollTo, which must not become the effect cleanup.
     scroller.current?.scrollTo({ top: 1e9, behavior: "smooth" });
   }, [messages, thinking]);
+
+  // AI Creator hand-off (?idea=…): the visitor's idea becomes the first message, once. ?tier= is remembered
+  // so the publish panel highlights the package they picked on the pricing page.
+  const ideaSent = useRef(false);
+  useEffect(() => {
+    if (tierHint) { try { sessionStorage.setItem(`fv-tier-${wedding.id}`, tierHint); } catch {} }
+    if (!idea && !tierHint) return;
+    window.history.replaceState(null, "", window.location.pathname + (initialPiece ? `?piece=${initialPiece}` : ""));
+    if (idea && !ideaSent.current && editable) { ideaSent.current = true; void send(idea); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const replaceDoc = (d: Doc) => setDocs((all) => all.map((x) => (x.id === d.id ? d : x)));
   const [peers, setPeers] = useState<Presence[]>([]);

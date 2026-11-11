@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth/server";
 import { getPricing, fmt, currencyFor, TIERS } from "@/lib/pricing";
 import { OCCASIONS, OCCASION_IDS } from "@/lib/occasions";
@@ -29,8 +30,14 @@ export const metadata: Metadata = {
 const HERO = ["maharani", "neva-monogram", "ashwem-dusk", "lotus-vows", "noor-nikah", "gatsby-vows"];
 const MARQUEE = ["Wedding", "Свадьба", "विवाह", "Engagement", "Помолвка", "सगाई", "Anniversary", "Годовщина", "Birthday", "День рождения", "जन्मदिन", "Baby shower", "गोदभराई", "Greetings", "Открытки"];
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
+export default async function Home({ searchParams }: { searchParams: Promise<{ lang?: string; preview?: string }> }) {
   const q = await searchParams;
+  // The public homepage lives on festivelle.love. Signed-in people go to their studio; ?preview=1 keeps
+  // this legacy landing reachable for the team.
+  if (q.preview !== "1") {
+    const me = await currentUser().catch(() => null);
+    redirect(me ? "/studio" : (process.env.SITE_URL || "https://festivelle.love") + (q.lang === "ru" ? "/ru/" : "/"));
+  }
   const lang: Lang = q.lang === "ru" || q.lang === "hi" ? q.lang : "en";
   const L = COPY[lang];
   const [user, P, featured, collections, all, partners] = await Promise.all([

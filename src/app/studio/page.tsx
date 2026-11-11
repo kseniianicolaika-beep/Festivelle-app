@@ -13,23 +13,37 @@ import { Petals } from "@/components/fx/Petals";
 import { Motif } from "@/components/Motif";
 import { StudioNav } from "./StudioNav";
 
-type Row = { id: string; profile: Profile; theme: string; published: boolean; client_name: string | null; pieces: number; rsvps: number };
+type Row = { id: string; profile: Profile; theme: string; published: boolean; client_name: string | null; pieces: number; rsvps: number; video_tier: string | null };
 
-export default async function Studio() {
+// "My Invitations / My Event Websites / My Video Invitations": one celebration holds all three, so the
+// views filter and open the matching editor.
+const VIEWS = [
+  { id: "all", label: "All celebrations" },
+  { id: "invitations", label: "My invitations" },
+  { id: "websites", label: "My event websites" },
+  { id: "videos", label: "My video invitations" },
+] as const;
+type View = (typeof VIEWS)[number]["id"];
+
+export default async function Studio({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const vq = (await searchParams).view;
+  const view: View = VIEWS.some((v) => v.id === vq) ? (vq as View) : "all";
   const user = await currentUser();
   if (!user) redirect("/auth/sign-in?next=/studio");
   const { current, list } = await activeWorkspace(user);
   const agency = current.kind === "agency";
   const weddings = (await sql`
-    SELECT w.id, w.profile, w.theme, w.published, w.client_name,
+    SELECT w.id, w.profile, w.theme, w.published, w.client_name, w.video_tier,
       (SELECT count(*)::int FROM documents d WHERE d.wedding_id = w.id) AS pieces,
       (SELECT count(*)::int FROM rsvps r WHERE r.wedding_id = w.id) AS rsvps
     FROM weddings w WHERE w.workspace_id = ${current.id} ORDER BY w.updated_at DESC`) as Row[];
+  const visible = view === "videos" ? weddings.filter((w) => w.video_tier) : view === "websites" ? weddings.filter((w) => occasionOf(w.profile) !== "greeting") : weddings;
+  const open = (id: string) => (view === "videos" ? `/studio/${id}/video` : view === "websites" ? `/studio/${id}?piece=website` : view === "invitations" ? `/studio/${id}?piece=invite` : `/studio/${id}`);
   if (weddings.length === 0 && !agency && canEdit(current.role) && list.length === 1 && !isAdmin(user)) redirect("/studio/new");
 
   const groups = agency
-    ? Object.entries(weddings.reduce<Record<string, Row[]>>((g, w) => ((g[w.client_name || "Unassigned"] ??= []).push(w), g), {}))
-    : [["", weddings] as [string, Row[]]];
+    ? Object.entries(visible.reduce<Record<string, Row[]>>((g, w) => ((g[w.client_name || "Unassigned"] ??= []).push(w), g), {}))
+    : [["", visible] as [string, Row[]]];
 
   return (
     <main className="relative min-h-dvh overflow-x-clip">
@@ -50,6 +64,11 @@ export default async function Studio() {
           </Reveal>
         )}
 
+        <nav aria-label="Filter" className="scroll-hide mt-10 flex gap-1.5 overflow-x-auto">
+          {VIEWS.map((v) => <Link key={v.id} href={v.id === "all" ? "/studio" : `/studio?view=${v.id}`} className={`whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] transition ${view === v.id ? "bg-wine text-[#fbeee6] shadow" : "text-ink-soft hover:bg-white/70"}`}>{v.label}</Link>)}
+          <Link href="/studio/saved" className="whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] text-ink-soft transition hover:bg-white/70">My saved templates</Link>
+        </nav>
+
         {groups.map(([client, rows]) => (
           <section key={client} className="mt-12">
             {agency && <Reveal><h2 className="display mb-5 flex items-center gap-3 text-2xl"><span className="h-px w-8 bg-gold" />{client}<span className="text-sm text-muted">({rows.length})</span></h2></Reveal>}
@@ -59,7 +78,7 @@ export default async function Studio() {
                 const [a, b] = nameParts(w.profile);
                 return (
                   <Reveal key={w.id} delay={i * 0.06}>
-                    <Link href={`/studio/${w.id}`} style={themeVars(th)} className="paper-tex group relative block aspect-[4/5] overflow-hidden rounded-[6px] bg-[var(--t-bg)] p-6 text-[var(--t-ink)] shadow-[0_30px_60px_-40px_rgba(74,20,36,.6)] ring-1 ring-[var(--t-gold)]/30 transition duration-1000 ease-[var(--ease-expo)] hover:-translate-y-2 hover:shadow-[0_50px_90px_-40px_rgba(74,20,36,.7)]">
+                    <Link href={open(w.id)} style={themeVars(th)} className="paper-tex group relative block aspect-[4/5] overflow-hidden rounded-[6px] bg-[var(--t-bg)] p-6 text-[var(--t-ink)] shadow-[0_30px_60px_-40px_rgba(74,20,36,.6)] ring-1 ring-[var(--t-gold)]/30 transition duration-1000 ease-[var(--ease-expo)] hover:-translate-y-2 hover:shadow-[0_50px_90px_-40px_rgba(74,20,36,.7)]">
                       <Petals count={6} colors={petalColors(th)} className="absolute opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
                       <div className="relative flex h-full flex-col justify-between">
                         <div className="flex items-center justify-between">
@@ -85,6 +104,7 @@ export default async function Studio() {
             </div>
           </section>
         ))}
+        {!!weddings.length && !visible.length && <Reveal><p className="mt-16 text-center font-display text-2xl italic text-muted">{view === "videos" ? "No video invitations yet — open any celebration and choose “Video”." : "Nothing here yet."}</p></Reveal>}
         {!weddings.length && <Reveal><p className="mt-16 text-center font-display text-2xl italic text-muted">Nothing here yet — begin the first celebration above.</p></Reveal>}
       </div>
     </main>

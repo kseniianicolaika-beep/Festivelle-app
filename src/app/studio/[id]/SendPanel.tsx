@@ -15,6 +15,9 @@ function Publishing({ wedding, published, onPublish, origin }: { wedding: Weddin
   const [pricing, setPricing] = useState<Pricing | null>(null);
   const [currency, setCurrency] = useState<"USD" | "INR" | "RUB">(() => guessCurrency());
   const [buy, setBuy] = useState<string | null>(null);
+  // Package chosen on festivelle.love/pricing (remembered by the studio) is highlighted instead of "most loved".
+  const [hint] = useState<Tier | null>(() => { try { const h = sessionStorage.getItem(`fv-tier-${wedding.id}`); return TIERS.includes(h as Tier) ? (h as Tier) : null; } catch { return null; } });
+  const star: Tier = hint ?? "premium";
   useEffect(() => {
     fetch("/api/pricing").then((r) => r.json()).then((j) => setPricing(j.pricing));
   }, []);
@@ -49,9 +52,9 @@ function Publishing({ wedding, published, onPublish, origin }: { wedding: Weddin
         <div className="mt-4 grid gap-2">
           {TIERS.filter((t) => rank(t) > rank(wedding.tier)).map((t, i) => (
             <motion.button key={t} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} onClick={() => setBuy(`site_${t}`)}
-              className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg ${t === "premium" ? "border-rose bg-white" : "border-line bg-white/60"}`}>
+              className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg ${t === star ? "border-rose bg-white" : "border-line bg-white/60"}`}>
               <div className="flex items-baseline justify-between">
-                <span className="display text-2xl">{pk[t].name}{t === "premium" && <span className="ml-2 align-middle text-[10px] uppercase tracking-widest text-rose">most loved</span>}</span>
+                <span className="display text-2xl">{pk[t].name}{t === star && <span className="ml-2 align-middle text-[10px] uppercase tracking-widest text-rose">{hint ? "your choice" : "most loved"}</span>}</span>
                 <span className="display text-2xl">{money(pk[t].price[currency], currency)}</span>
               </div>
               <ul className="mt-2 space-y-0.5 text-xs text-muted">{pk[t].features.map((f) => <li key={f}>♡ {f}</li>)}</ul>
