@@ -18,6 +18,7 @@ type Row = { id: string; slug: string; owner_id: string; owner_email: string | n
 
 export default async function Admin() {
   const mailOn = await emailEnabled();
+  const ai = await aiProvider();
   const user = await currentUser();
   if (!user) redirect("/auth/sign-in?next=/admin");
   if (!isAdmin(user)) notFound();
@@ -57,7 +58,7 @@ export default async function Admin() {
           ))}
         </div>
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
-          <span className={`rounded-full px-3 py-1 ${aiProvider() ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>AI: {aiProvider() ?? "not configured — rule engine"}</span>
+          <span className={`rounded-full px-3 py-1 ${ai ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>AI: {ai ?? "not configured — rule engine"}</span>
           {Object.entries(PROVIDERS).filter(([id]) => id !== "test").map(([id, p]) => (
             <span key={id} className={`rounded-full px-3 py-1 ${p.enabled() ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{p.note.split("· ")[1]}: {p.enabled() ? "live" : "no keys"}</span>
           ))}

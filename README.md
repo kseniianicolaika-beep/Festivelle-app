@@ -4,13 +4,14 @@
 
 | | |
 |---|---|
-| **Live app** | https://hugs.festivelle.love (also https://wedding-builder-two.vercel.app) |
+| **Live app** | https://hugs.festivelle.love |
 | **Marketing site** | https://festivelle.love — repo `Akshay115/web-times` (local folder `Filen/Projects/Festivelle`) |
 | **Repository** | https://github.com/Akshay115/Festivelle-app |
-| **Hosting** | Two Vercel projects auto-deploy from `main`: `festivelle/festivelle-app` (serves hugs.festivelle.love) and `lyvena/wedding-builder` |
+| **Hosting** | Vercel project `festivelle/festivelle-app` (client team) auto-deploys from `main` and serves hugs.festivelle.love |
 | **Email** | Sequenzy (project “Festivelle”) — auth codes, invitations, reminders, notifications, newsletter list |
 | **Backend** | Neon project `raspy-union-09496702`, branch `production` (Postgres, Auth, Object Storage, Realtime, Functions) |
-| **AI** | Experiential Labs free models (GPT-6 Luna → DeepSeek V4.1 Flash) → OpenRouter free → rule engine |
+| **AI** | Primary: Experiential Labs GPT-6 Luna (→ DeepSeek V4.1 Flash). Backup: OpenRouter free models, called directly. Then the rule engine |
+| **Analytics & CRM** | PostHog (EU cloud) product analytics + HubSpot tracking (portal 247936987), both after cookie consent. Sequenzy holds the main contact list; HubSpot is synced from Sequenzy |
 | **Payments** | YooKassa (Russia, RUB) · Razorpay (India INR + international USD) · NOWPayments (crypto, worldwide) |
 | **Support** | Heart concierge → WhatsApp +91 72186 78536 |
 | **Platform owner** | akshay@lyvena.xyz (permanent admin) |
@@ -122,13 +123,41 @@ customers can also connect their own domain (Vercel Domains API).
 
 ## AI (free models)
 
-`src/lib/ai.ts` calls **Experiential Labs** (`EXPLABS_API_KEY`; OpenAI-compatible at `https://api.experientiallabs.ai/v1`)
-with `gpt-6-luna`, then `deepseek-v4.1-flash` — both $0 within the Free plan's shared pool (10 req/min, 250K tokens/min,
-1M tokens/day, resets 00:00 UTC; a refunded $1 card verification unlocks it). On a 429 or outage it falls back to
-OpenRouter free models, then to the rule-based designer, so the chat never breaks. Per-user metering
-(`ai_usage`, `credits`) keeps one user from draining the shared pool. `/api/ai/write` writes invitation texts, wishes
-and greetings (3 options). `/api/ai/visual` generates illustrations when `IMAGE_MODEL` is set (image models are not in
-the free plan). Upgrade to Experiential Labs Pro ($20/mo, 10×) when traffic grows.
+Every AI call (designer chat, `/api/ai/write`, the guest concierge) goes through one chain in `src/lib/ai.ts`
+(`completeText`). Each provider is called **directly**:
+
+1. **Experiential Labs** (primary) — `gpt-6-luna`, then `deepseek-v4.1-flash`, OpenAI-compatible at
+   `https://api.experientiallabs.ai/v1`. $0 within the Free plan's shared pool (10 req/min, 250K tokens/min, 1M
+   tokens/day, resets 00:00 UTC). The account must be verified with a card first (a $1 hold, released, not
+   charged) — until then it answers 402 and the chain moves on.
+2. **OpenRouter** (backup, direct — never routed through Experiential Labs) — free models only:
+   `nvidia/nemotron-3-ultra-550b-a55b:free` → `nvidia/nemotron-3.5-super-vl:free` (reads images too) →
+   `openrouter/free`. `OPENROUTER_MODEL` may override the first choice, but only with a `:free` model.
+3. The rule-based designer, so the chat never breaks.
+
+**Keys** (`src/lib/ai-keys.ts`): `EXPLABS_API_KEY` / `OPENROUTER_API_KEY` env vars win; otherwise they're read
+from the Neon row `settings.key = 'integrations'` (`value.explabs_api_key`, `value.openrouter_api_key`), cached 5
+minutes. That's how the client team's Vercel project gets them — its env can't be edited from our account. To rotate
+a key, update that JSON value (and `.env.local` locally). `/admin` shows which providers are configured.
+
+Per-user metering (`ai_usage`, `credits`) keeps one user from draining the shared pool. `/api/ai/visual` generates
+illustrations when `IMAGE_MODEL` is set (image models are not in the free plan). Upgrade to Experiential Labs Pro
+($20/mo, 10×) when traffic grows.
+
+## Analytics, HubSpot & contacts
+
+`src/components/Analytics.tsx` (mounted in the root layout) shows a small EN/RU cookie banner on app pages. Only
+after **Accept** does it load PostHog (`https://eu.i.posthog.com`, pageviews on route changes, person profiles only
+for identified users) and the HubSpot tracking script (`js-na2.hs-scripts.com/247936987.js`). Hosts' published
+celebration sites (`/w/*`, `/d/*`, subdomains and custom domains) are never tracked. The PostHog project token and
+HubSpot portal ID are public values, so they default in code; `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`,
+`NEXT_PUBLIC_HUBSPOT_PORTAL_ID` and `NEXT_PUBLIC_APP_HOSTS` (extra app hostnames) override them.
+
+**Contacts:** Sequenzy is the main contact list (newsletter, sign-ups). HubSpot gets the same contacts through the
+Sequenzy ↔ HubSpot connection, set up by hand in Sequenzy — the app doesn't write to HubSpot directly.
+
+Composio and Monid are deliberately **not** used here: email, payments, analytics and CRM are already covered by
+direct integrations, and Monid's pay-per-call data APIs have no feature in this product to serve.
 
 ## Templates (90 bespoke, hand-composed suites)
 
@@ -228,7 +257,7 @@ deliberately not indexed (see the contract above). Change the public URL with `S
 
 | Area | What it does |
 |---|---|
-| **AI designer** (`src/lib/ai.ts`, `src/lib/designer.ts`) | OpenRouter **free models only** run the whole conversation. It asks one warm question at a time in the couple's language, fills the wedding profile, writes the invitation wording and closing blessing in the guest language, polishes the love story, picks the design world, and carries out free-form edits. If AI is unavailable, a rule-based designer takes over automatically, so the app never breaks. |
+| **AI designer** (`src/lib/ai.ts`, `src/lib/designer.ts`) | **Free models only** (Experiential Labs GPT-6 Luna, then OpenRouter) run the whole conversation. It asks one warm question at a time in the couple's language, fills the wedding profile, writes the invitation wording and closing blessing in the guest language, polishes the love story, picks the design world, and carries out free-form edits. If AI is unavailable, a rule-based designer takes over automatically, so the app never breaks. |
 | **Five design worlds** (`src/lib/themes.ts`) | Konkan Sunset, Azulejo, Rajwada, Belaya Noch, Mogra. Each has its own palette, gold-foil tones, falling petals (marigold for Rajwada, birch-white for Belaya Noch, and so on) and a line-art motif that draws itself. |
 | **Studio** (`/studio/[id]`) | Glass chat panel with replies that fade in word by word, a heart typing indicator and spring-animated suggestion chips. Live canvas with a 3D-tilting invitation, blur cross-fades between design worlds, and Invitation / Save-the-date / Website tabs. |
 | **Wedding website** (`/w/[slug]`) | Opens with a **sealed envelope** guests tap to open (wax seal with initials, flap, rising letter). Then a gold-foil hero, countdown, story, an animated events timeline, Goa travel notes, add-to-calendar, and an RSVP form with a heart burst on “yes”. |
@@ -274,7 +303,7 @@ npm run dev
 
 ## Deploy (Vercel)
 
-The GitHub repo `Akshay115/Festivelle-app` is connected to two Vercel projects: `festivelle/festivelle-app` (the client's team; serves **hugs.festivelle.love**) and `lyvena/wedding-builder` (https://wedding-builder-two.vercel.app). Every push to `main` deploys both; deployment results show as commit statuses on GitHub. Set `SITE_URL=https://festivelle.love` where you can (it's also the default). Environment variables live in Vercel (Production and Preview). For each new app domain:
+The GitHub repo `Akshay115/Festivelle-app` (single branch, `main`) is connected to the Vercel project `festivelle/festivelle-app` (the client's team; serves **hugs.festivelle.love**). Every push to `main` deploys it; results show as commit statuses on GitHub. (The old `lyvena/wedding-builder` project no longer exists.) Secrets that project needs but whose env we can't edit are read from Neon `settings.integrations` (AI and Sequenzy keys). Set `SITE_URL=https://festivelle.love` where you can (it's also the default). Environment variables live in Vercel (Production and Preview). For each new app domain:
 
 ```bash
 neon neon-auth domain add https://<domain>

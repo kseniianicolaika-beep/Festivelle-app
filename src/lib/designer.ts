@@ -92,7 +92,7 @@ function ask(step: number, p: Profile): Omit<Turn, "profile" | "step"> {
 
 export async function converse(profile: Profile, step: number, message: string, theme: string, history: { role: string; content: string }[] = [], doc?: Doc | null, selected?: string): Promise<Turn> {
   // AI-first: OpenRouter drives the whole conversation; the rule engine below is the graceful fallback.
-  if (aiEnabled()) {
+  if (await aiEnabled()) {
     const ai = await aiTurn(profile, theme, history, message, doc, selected).catch((e) => (console.error("aiTurn", e), null));
     if (ai) {
       const p = { ...profile, ...ai.patch };

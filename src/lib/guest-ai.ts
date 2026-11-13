@@ -1,31 +1,13 @@
+import { completeText } from "./ai";
 import type { Profile } from "./profile";
 import { displayNames, occasionOf, OCCASIONS } from "./occasions";
 import { formatDate } from "./profile";
 
-// Guest concierge on the published site. Answers ONLY from the hosts' own details; free models only
-// (Experiential Labs → OpenRouter free). Returns null when no AI is reachable — the widget then shows a fallback.
+// Guest concierge on the published site. Answers ONLY from the hosts' own details; free models only, same chain
+// as the designer (Experiential Labs → OpenRouter free, both direct). Returns null when no AI is reachable — the
+// widget then shows a fallback.
 async function chat(system: string, user: string): Promise<string | null> {
-  const tries: { base: string; key?: string; model: string; extra?: Record<string, unknown> }[] = [
-    ...(process.env.EXPLABS_API_KEY ? ["gpt-6-luna", "deepseek-v4.1-flash"].map((model) => ({ base: process.env.EXPLABS_BASE_URL || "https://api.experientiallabs.ai/v1", key: process.env.EXPLABS_API_KEY, model })) : []),
-    ...(process.env.OPENROUTER_API_KEY ? [{ base: "https://openrouter.ai/api/v1", key: process.env.OPENROUTER_API_KEY, model: "openrouter/free" }] : []),
-  ];
-  for (const t of tries) {
-    try {
-      const res = await fetch(`${t.base}/chat/completions`, {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${t.key}` },
-        body: JSON.stringify({ model: t.model, temperature: 0.3, max_tokens: 300, messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
-        signal: AbortSignal.timeout(30_000),
-      });
-      if (!res.ok) continue;
-      const j = await res.json();
-      const text = String(j.choices?.[0]?.message?.content ?? "").trim();
-      if (text) return text;
-    } catch {
-      /* next provider */
-    }
-  }
-  return null;
+  return completeText([{ role: "system", content: system }, { role: "user", content: user }], { temperature: 0.3, maxTokens: 300 }).catch(() => null);
 }
 
 export function factSheet(p: Profile, extra?: string) {

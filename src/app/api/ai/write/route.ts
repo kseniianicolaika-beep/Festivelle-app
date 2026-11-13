@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   const brief = String(b.brief ?? "").trim().slice(0, 1500);
   const lang = ["en", "ru", "hi"].includes(b.lang) ? b.lang : "en";
   if (!brief) return Response.json({ error: "Tell me who it’s for and the feeling you want." }, { status: 400 });
-  if (!aiEnabled()) return Response.json({ error: "AI writing is resting right now — please try again shortly." }, { status: 503 });
+  if (!(await aiEnabled())) return Response.json({ error: "AI writing is resting right now — please try again shortly." }, { status: 503 });
   if (!(await meter(user.id, "text"))) return Response.json({ error: "You’ve used today’s free AI. Add credits under Billing to keep writing.", needs: "credits" }, { status: 402 });
   const options = await writeTexts(brief, lang);
   if (!options) return Response.json({ error: "The muse is busy — try again in a moment." }, { status: 503 });

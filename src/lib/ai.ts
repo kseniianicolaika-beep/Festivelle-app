@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { aiKeys } from "./ai-keys";
 import type { Profile } from "./profile";
 import * as Occ from "./occasions";
 import { CURATED_ACCENTS, FONT_PAIRS, isFontPair, isHex } from "./editor-options";
@@ -9,17 +10,21 @@ import { THEMES } from "./themes";
 import { MOTIFS, INVOCATIONS, isMotif } from "./motifs";
 import { KINDS, PAPER_LAYOUTS, SITE_LAYOUTS, SECTIONS, cleanSections, isKind, type Design, type Doc, type Kind } from "./templates";
 
-// AI runs on FREE models only, in this order:
+// AI runs on FREE models only, each provider called directly, in this order:
 //  1. Experiential Labs (https://www.experientiallabs.ai) — GPT-6 Luna, then DeepSeek V4.1 Flash. $0 within the
 //     Free plan (shared pool: 10 req/min, 250K tokens/min, 1M tokens/day, resets 00:00 UTC). Key: EXPLABS_API_KEY.
-//  2. OpenRouter free models (below) when Experiential Labs is rate-limited (429) or down.
+//  2. OpenRouter (https://openrouter.ai, direct — never via Experiential Labs) free models below, when Experiential
+//     Labs is rate-limited (429), unverified or down. Key: OPENROUTER_API_KEY.
 //  3. The rule-based designer in designer.ts, so the conversation never breaks.
+// Keys: env first, then settings.integrations in Neon (see ai-keys.ts).
 export const EXPLABS_MODELS = ["gpt-6-luna", "deepseek-v4.1-flash"];
 
 // Per-request switch used by AI metering: when a user is out of free AI + credits, AI is off for that request.
 const gate = new AsyncLocalStorage<{ off: boolean }>();
 export const withoutAI = <T,>(fn: () => Promise<T>) => gate.run({ off: true }, fn);
 
+// Best free OpenRouter models for design work (checked 2026-11-13): Nemotron 3 Ultra writes the strongest
+// structured design JSON; Nemotron 3.5 Super VL also reads images; openrouter/free is the catch-all.
 export const FREE_MODELS = [
   "nvidia/nemotron-3-ultra-550b-a55b:free",
   "nvidia/nemotron-3.5-super-vl:free",
@@ -28,72 +33,72 @@ export const FREE_MODELS = [
 
 const isFree = (m: string) => m.endsWith(":free") || m === "openrouter/free";
 
-function config() {
-  if (!process.env.OPENROUTER_API_KEY) return null;
+function openrouterModels() {
   // An override is honoured only if it's a free model — paid models can never be selected by accident.
   const override = (process.env.OPENROUTER_MODEL ?? "").trim();
-  const models = (override && isFree(override) ? [override, ...FREE_MODELS.filter((m) => m !== override)] : FREE_MODELS).slice(0, 3);
-  return { base: "https://openrouter.ai/api/v1", key: process.env.OPENROUTER_API_KEY, models };
+  return (override && isFree(override) ? [override, ...FREE_MODELS.filter((m) => m !== override)] : FREE_MODELS).slice(0, 3);
 }
 
-export const aiProvider = () => (process.env.EXPLABS_API_KEY ? "Experiential Labs" : process.env.OPENROUTER_API_KEY ? "OpenRouter" : null);
-export const aiEnabled = () => !gate.getStore()?.off && !!aiProvider();
+export const aiProvider = async () => {
+  const k = await aiKeys();
+  return k.explabs && k.openrouter ? "Experiential Labs → OpenRouter" : k.explabs ? "Experiential Labs" : k.openrouter ? "OpenRouter" : null;
+};
+export const aiEnabled = async () => !gate.getStore()?.off && !!(await aiProvider());
 
 const parse = (text: string) => JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
 
-async function explabs(messages: { role: string; content: string }[]) {
-  const key = process.env.EXPLABS_API_KEY;
-  if (!key) return null;
-  const base = process.env.EXPLABS_BASE_URL || "https://api.experientiallabs.ai/v1";
-  const models = (process.env.EXPLABS_MODELS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  for (const model of models.length ? models : EXPLABS_MODELS) {
-    try {
-      const res = await fetch(`${base}/chat/completions`, {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-        body: JSON.stringify({ model, temperature: 0.7, response_format: { type: "json_object" }, messages }),
-        signal: AbortSignal.timeout(40_000),
-      });
-      if (!res.ok) { console.warn(`explabs ${model} ${res.status}`); continue; } // 429 = free pool exhausted → next
-      const j = await res.json();
-      return parse(j.choices?.[0]?.message?.content ?? "");
-    } catch (e) {
-      console.warn(`explabs ${model}`, (e as Error).message);
+type Msg = { role: string; content: string };
+type Opts = { json?: boolean; temperature?: number; maxTokens?: number };
+
+/** One chat completion through the provider chain; returns the raw text of the first provider that answers. */
+export async function completeText(messages: Msg[], opts: Opts = {}): Promise<string | null> {
+  const keys = await aiKeys();
+  const common = { temperature: opts.temperature ?? 0.7, ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}), messages };
+  if (keys.explabs) {
+    const base = process.env.EXPLABS_BASE_URL || "https://api.experientiallabs.ai/v1";
+    const models = (process.env.EXPLABS_MODELS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    for (const model of models.length ? models : EXPLABS_MODELS) {
+      try {
+        const res = await fetch(`${base}/chat/completions`, {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: `Bearer ${keys.explabs}` },
+          body: JSON.stringify({ model, ...common, ...(opts.json ? { response_format: { type: "json_object" } } : {}) }),
+          signal: AbortSignal.timeout(40_000),
+        });
+        if (!res.ok) { console.warn(`explabs ${model} ${res.status}`); continue; } // 429 = free pool exhausted → next
+        const text = String((await res.json()).choices?.[0]?.message?.content ?? "").trim();
+        if (text) return text;
+      } catch (e) {
+        console.warn(`explabs ${model}`, (e as Error).message);
+      }
     }
   }
-  return null;
-}
-
-async function complete(system: string, user: string, history: { role: string; content: string }[] = []) {
-  const messages = [{ role: "system", content: system }, ...history.slice(-16), { role: "user", content: user }];
-  const first = await explabs(messages);
-  if (first) return first;
-  const c = config();
-  if (!c) return null;
-  const res = await fetch(`${c.base}/chat/completions`, {
+  if (!keys.openrouter) return null;
+  const models = openrouterModels();
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${c.key}`,
-      "HTTP-Referer": process.env.APP_URL || "https://wedding-builder-two.vercel.app",
+      authorization: `Bearer ${keys.openrouter}`,
+      "HTTP-Referer": process.env.APP_URL || "https://hugs.festivelle.love",
       "X-Title": "Festivelle",
     },
-    body: JSON.stringify({
-      model: c.models[0],
-      models: c.models, // OpenRouter fallback routing, free models only
-      temperature: 0.7,
-      messages,
-    }),
+    body: JSON.stringify({ model: models[0], models, ...common }), // OpenRouter fallback routing, free models only
     signal: AbortSignal.timeout(55_000),
   });
   if (!res.ok) throw new Error(`AI ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const json = await res.json();
-  return parse(json.choices?.[0]?.message?.content ?? "");
+  return String((await res.json()).choices?.[0]?.message?.content ?? "").trim() || null;
+}
+
+async function complete(system: string, user: string, history: Msg[] = []) {
+  const messages = [{ role: "system", content: system }, ...history.slice(-16), { role: "user", content: user }];
+  const text = await completeText(messages, { json: true });
+  return text ? parse(text) : null;
 }
 
 // Free-form writing helper (invitation texts, wishes, greetings) — returns { options: string[] }.
 export async function writeTexts(brief: string, lang: string) {
-  if (!aiEnabled()) return null;
+  if (!(await aiEnabled())) return null;
   const out = await complete(
     `You are a gifted, romantic copywriter for invitations and greetings. Write in language "${lang}" (en|ru|hi). Be warm, elegant, specific, never clichéd; no emojis unless asked. Respond ONLY with JSON {"options": string[3]} — three distinct options, each under 60 words.`,
     brief,

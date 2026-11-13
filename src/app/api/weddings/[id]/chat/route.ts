@@ -20,7 +20,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const doc = await getDoc(id, docId);
   const history = (await sql`SELECT role, content FROM messages WHERE wedding_id = ${id} ORDER BY created_at DESC LIMIT 16`).reverse() as { role: string; content: string }[];
   // Free daily AI allowance, then credits; when both are spent the (free) rule-based designer answers.
-  const metered = aiEnabled() ? await meter(g.user.id, "text").catch(() => true) : true;
+  const metered = (await aiEnabled()) ? await meter(g.user.id, "text").catch(() => true) : true;
   const run = () => converse(w.profile, w.step, message, w.theme, history, doc, selected);
   const turn = metered ? await run() : await withoutAI(run);
   if (!metered) turn.reply += "\n\n(You’ve used today’s free AI conversation — I’ll keep helping in simple mode. Add credits under Billing for the full designer.)";
