@@ -198,9 +198,19 @@ files, no licensing. Off by default; guests tap “♪ Play our song”.
 **Review:** `/dev/template/<id>?kind=website|invite|save|story|thankyou|greeting` (dev only) renders any template
 with sample data; `/dev/music`, `/dev/studio` likewise.
 
+## Logo & favicon
+
+The logo is identical to the website's (web-times `src/components/Brand.astro`): “Festivelle” in **Parisienne**
+(`--font-parisienne`, loaded in `src/app/layout.tsx`), wine ink `#7a1c33`, with the outlined heart top-right —
+`<Wordmark />` in `src/components/brand/Wordmark.tsx` (default 2.05rem, like the site header; `tone` recolours it on
+dark panels). `<Seal />` is the heart alone, for tight spots (studio toolbar on phones). Change both repos together.
+
+Favicon = the calligraphic heart from the client's round logo, transparent: `src/app/favicon.ico` (16/32/48),
+`src/app/icon.png` (512) and `src/app/apple-icon.png` (heart on cream) — Next.js emits the `<link>` tags.
+
 ## Product design
 
-Brand system (wax-seal wordmark, fluid type scale, motion tokens in `src/templates/_kit/motion.ts`), an
+Brand system (the festivelle.love logo, fluid type scale, motion tokens in `src/templates/_kit/motion.ts`), an
 Awwwards-style landing page (live bespoke templates in the hero, scroll story, poster wall, occasion index),
 `/templates` poster wall where each card plays its opening in view, and a calmer studio: floating chat, desktop/phone
 device frames for websites, a “bloom” onboarding as the first names arrive.

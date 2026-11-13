@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Bad_Script, Comfortaa, Cormorant_Garamond, Forum, Inter, Lora, Marck_Script, Montserrat, Playfair_Display, Rozha_One, Tiro_Devanagari_Hindi, Unbounded } from "next/font/google";
+import { Bad_Script, Comfortaa, Cormorant_Garamond, Forum, Inter, Lora, Marck_Script, Montserrat, Parisienne, Playfair_Display, Rozha_One, Tiro_Devanagari_Hindi, Unbounded } from "next/font/google";
 import { BRAND } from "@/lib/brand";
 import { Analytics } from "@/components/Analytics";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin", "cyrillic"] });
 const cormorant = Cormorant_Garamond({ variable: "--font-cormorant", subsets: ["latin", "cyrillic"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
+// The logo face (matches festivelle.love). Latin only — the wordmark is always "Festivelle".
+const parisienne = Parisienne({ variable: "--font-parisienne", subsets: ["latin"], weight: "400" });
 const script = Marck_Script({ variable: "--font-script", subsets: ["latin", "cyrillic"], weight: "400" });
 // Template font pairings (src/lib/fonts.ts). Not preloaded — the browser fetches a face only when a template uses it.
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin", "cyrillic"], style: ["normal", "italic"], preload: false });
@@ -25,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${cormorant.variable} ${script.variable} ${deva.variable} ${playfair.variable} ${badscript.variable} ${forum.variable} ${montserrat.variable} ${lora.variable} ${comfortaa.variable} ${unbounded.variable} ${rozha.variable}`}>
+    <html lang="en" className={`${inter.variable} ${cormorant.variable} ${script.variable} ${parisienne.variable} ${deva.variable} ${playfair.variable} ${badscript.variable} ${forum.variable} ${montserrat.variable} ${lora.variable} ${comfortaa.variable} ${unbounded.variable} ${rozha.variable}`}>
       <body className="min-h-dvh">{children}<Analytics /></body>
     </html>
   );

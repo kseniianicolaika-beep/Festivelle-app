@@ -1,26 +1,30 @@
 import { BRAND } from "@/lib/brand";
 
-// The Festivelle mark: a wax-seal monogram + an editorial wordmark whose "elle" leans into italic.
-export function Seal({ className = "h-8 w-8", tone = "currentColor", gold = "var(--gold)" }: { className?: string; tone?: string; gold?: string }) {
+// The Festivelle logo — identical to festivelle.love (web-times src/components/Brand.astro):
+// the wordmark in Parisienne, wine ink #7a1c33, with the outlined heart sitting top-right.
+const INK = "#7a1c33";
+
+/** The outlined heart from the logo. Used alone where there is no room for the wordmark. */
+export function Heart({ className = "h-[24px] w-[26px]", style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 40 40" className={className} aria-hidden>
-      <circle cx="20" cy="20" r="18.5" fill="none" stroke={gold} strokeWidth="1" />
-      <g className="seal-spin">
-        <circle cx="20" cy="20" r="15.2" fill="none" stroke={gold} strokeWidth=".6" strokeDasharray=".6 2.4" strokeLinecap="round" />
-      </g>
-      <text x="20" y="26.2" textAnchor="middle" fontFamily="var(--font-cormorant), Georgia, serif" fontStyle="italic" fontSize="19" fill={tone}>F</text>
-      <path d="M27.4 10.6c-.7-.7-1.8-.6-2.3.2-.5-.8-1.6-.9-2.3-.2-.7.7-.6 1.7.1 2.4l2.2 2 2.2-2c.7-.7.8-1.7.1-2.4Z" fill="var(--rose)" />
+    <svg viewBox="0 0 32 30" className={className} style={style} aria-hidden>
+      <path d="M16 27C7 20.5 3 15.6 3 10.4 3 6.3 6.1 3.4 9.7 3.4c2.6 0 4.8 1.4 6.3 3.6 1.5-2.2 3.7-3.6 6.3-3.6 3.6 0 6.7 2.9 6.7 7 0 5.2-4 10.1-13 16.6Z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M20.5 6.5c2.5.3 4.4 2 4.6 4.6" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
     </svg>
   );
 }
 
-export function Wordmark({ className = "", size = "text-[1.7rem]", seal = true, sealClass = "", tone }: { className?: string; size?: string; seal?: boolean; sealClass?: string; tone?: string }) {
-  const n = BRAND.name;
-  const cut = /elle$/i.test(n) ? n.length - 4 : n.length;
+/** Compact mark (the logo heart) — kept under the old name so existing call sites keep working. */
+export function Seal({ className = "h-8 w-8", tone = INK }: { className?: string; tone?: string; gold?: string }) {
+  return <span className={`inline-flex items-center justify-center ${className}`} style={{ color: tone }}><Heart className="h-[75%] w-[81%]" /></span>;
+}
+
+/** `size` is the font size of the wordmark (the website header uses 2.05rem); the heart scales with it. */
+export function Wordmark({ className = "", size = "text-[2.05rem]", tone }: { className?: string; size?: string; seal?: boolean; sealClass?: string; tone?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`} style={tone ? { color: tone } : undefined}>
-      {seal && <Seal className={`h-[1.15em] w-[1.15em] shrink-0 text-[1.5rem] ${sealClass}`} />}
-      <span className={`wordmark ${size}`}>{n.slice(0, cut)}<em>{n.slice(cut)}</em></span>
+    <span className={`brand inline-flex items-start gap-[2px] leading-none ${size} ${className}`} style={{ color: tone || INK }}>
+      <span className="brand-word">{BRAND.name}</span>
+      <Heart className="brand-heart" />
     </span>
   );
 }

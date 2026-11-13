@@ -314,7 +314,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
 
       <header className="relative z-30 flex items-center justify-between gap-2 px-3 py-2.5 md:px-6 md:py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Link href="/studio" className="flex shrink-0 items-center" aria-label={`${BRAND.name} studio`}><Seal className="h-8 w-8 sm:hidden" /><span className="hidden sm:inline"><Wordmark size="text-[1.45rem]" /></span></Link>
+          <Link href="/studio" className="flex shrink-0 items-center" aria-label={`${BRAND.name} studio`}><Seal className="h-8 w-8 sm:hidden" /><span className="hidden sm:inline"><Wordmark size="text-[1.8rem]" /></span></Link>
           <span className="hidden h-5 w-px bg-line-strong sm:block" />
           <span className="truncate font-display text-[1.15rem] italic text-ink-soft">{profile.partner1 ? names : `a new ${OCCASIONS[occ].name.toLowerCase()}`}</span>
           {adminView && <span className="hidden rounded-full bg-wine px-3 py-1 text-[10px] tracking-widest text-[#fbeee6] sm:inline">ADMIN VIEW</span>}

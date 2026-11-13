@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
+import { Wordmark } from "@/components/brand/Wordmark";
 
 const TABS = [
   ["overview", "/admin", "Celebrations"],
@@ -14,7 +15,7 @@ export function AdminNav({ active, email }: { active: (typeof TABS)[number][0]; 
   return (
     <nav className="relative z-10 mx-auto max-w-7xl px-6 pt-7">
       <div className="flex items-center justify-between">
-        <Link href="/studio" className="display text-2xl">{BRAND.name}</Link>
+        <Link href="/studio" aria-label={`${BRAND.name} studio`}><Wordmark /></Link>
         <span className="rounded-full bg-wine px-3.5 py-1.5 text-xs tracking-widest text-[#fbeee6]">ADMIN · {email}</span>
       </div>
       <div className="mt-6 flex gap-1 overflow-x-auto">

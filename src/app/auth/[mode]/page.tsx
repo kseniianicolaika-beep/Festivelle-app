@@ -23,7 +23,7 @@ export default async function AuthPage({ params }: { params: Promise<{ mode: str
         <Aurora colors={["#c06c7855", "#c5a06a40", "#8e2c4a55", "#f1dcb322"]} />
         <Petals count={20} className="absolute" />
         <Sparkles color="#f1dcb3" />
-        <Link href={SITE_URL} className="relative" aria-label={BRAND.name}><Wordmark size="text-[1.9rem]" tone="#f6ece2" /></Link>
+        <Link href={SITE_URL} className="relative" aria-label={BRAND.name}><Wordmark tone="#f6ece2" /></Link>
         <div className="relative max-w-xl">
           <p className="kicker mb-8 text-[#c5a06a]">Made with love in Goa</p>
           <Verses />
@@ -36,7 +36,7 @@ export default async function AuthPage({ params }: { params: Promise<{ mode: str
         <Aurora />
         <div className="lg:hidden"><Petals count={12} className="absolute" /></div>
         <div className="glass rise relative w-full max-w-[420px] rounded-[32px] p-9 md:p-11">
-          <Link href={SITE_URL} className="mb-6 flex justify-center lg:hidden" aria-label={BRAND.name}><Wordmark size="text-[1.8rem]" /></Link>
+          <Link href={SITE_URL} className="mb-6 flex justify-center lg:hidden" aria-label={BRAND.name}><Wordmark /></Link>
           {mode === "forgot-password" ? (
             <>
               <h1 className="t-h2 text-center">Reset your <em className="text-rose">password</em></h1>

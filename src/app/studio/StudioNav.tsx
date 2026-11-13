@@ -19,7 +19,7 @@ export function StudioNav({ current, list, email, admin, active }: { current: Wo
     <nav className="relative z-30 mx-auto max-w-[1320px] px-5 pt-5 md:px-10">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-4">
-          <Link href="/studio" className="hidden shrink-0 sm:block" aria-label="Studio home"><Wordmark size="text-[1.6rem]" /></Link>
+          <Link href="/studio" className="hidden shrink-0 sm:block" aria-label="Studio home"><Wordmark /></Link>
           <span className="hidden h-6 w-px bg-line-strong sm:block" />
           <WorkspaceSwitcher current={current} list={list} />
         </div>

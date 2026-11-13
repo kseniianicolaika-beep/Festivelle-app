@@ -157,8 +157,9 @@ body { background: var(--ivory); color: var(--ink); font-family: var(--font-inte
 .hair { height: 1px; background: linear-gradient(90deg, transparent, var(--line-strong), transparent); }
 
 /* Wordmark */
-.wordmark { font-family: var(--font-cormorant), Georgia, serif; font-weight: 500; letter-spacing: -0.012em; line-height: 1; }
-.wordmark em { font-style: italic; font-weight: 400; letter-spacing: 0; }
+/* Logo — same as festivelle.love: Parisienne wordmark (2.05rem in the site header) + 26×24px heart */
+.brand-word { font-family: var(--font-parisienne), "Parisienne", cursive; font-weight: 400; letter-spacing: 0.01em; line-height: 1; }
+.brand-heart { width: 0.793em; height: 0.732em; margin-top: -0.061em; flex: none; }
 .seal-spin { animation: seal-spin 24s linear infinite; transform-origin: 50% 50%; }
 @keyframes seal-spin { to { transform: rotate(360deg); } }
 
