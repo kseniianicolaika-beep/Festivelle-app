@@ -200,10 +200,14 @@ with sample data; `/dev/music`, `/dev/studio` likewise.
 
 ## Logo & favicon
 
-The logo is identical to the website's (web-times `src/components/Brand.astro`): “Festivelle” in **Parisienne**
-(`--font-parisienne`, loaded in `src/app/layout.tsx`), wine ink `#7a1c33`, with the outlined heart top-right —
-`<Wordmark />` in `src/components/brand/Wordmark.tsx` (default 2.05rem, like the site header; `tone` recolours it on
-dark panels). `<Seal />` is the heart alone, for tight spots (studio toolbar on phones). Change both repos together.
+The logo is the one in the client's site template and is identical to festivelle.love's (web-times
+`src/components/Brand.astro`): “Festivelle” in **Parisienne** (`--font-parisienne`, loaded in `src/app/layout.tsx`;
+letter-spacing −0.02em + a 0.012em stroke), wine ink `#7a1c33`, followed by the template's **calligraphic brush heart**
+(a filled SVG path traced from the template — same path on both sites). `<Wordmark />` in
+`src/components/brand/Wordmark.tsx` renders it (default 2.05rem, like the site header; `tone` recolours it on dark
+panels); the proportions live in `.brand-word` / `.brand-heart` in `src/app/globals.css` (heart ~0.94em tall, 0.23em
+after the “e”). `<Seal />` / `<Heart />` are the heart alone, for tight spots (studio toolbar on phones). Change both
+repos together.
 
 Favicon = the calligraphic heart from the client's round logo, transparent: `src/app/favicon.ico` (16/32/48),
 `src/app/icon.png` (512) and `src/app/apple-icon.png` (heart on cream) — Next.js emits the `<link>` tags.

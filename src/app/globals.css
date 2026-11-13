@@ -157,9 +157,11 @@ body { background: var(--ivory); color: var(--ink); font-family: var(--font-inte
 .hair { height: 1px; background: linear-gradient(90deg, transparent, var(--line-strong), transparent); }
 
 /* Wordmark */
-/* Logo — same as festivelle.love: Parisienne wordmark (2.05rem in the site header) + 26×24px heart */
-.brand-word { font-family: var(--font-parisienne), "Parisienne", cursive; font-weight: 400; letter-spacing: 0.01em; line-height: 1; }
-.brand-heart { width: 0.793em; height: 0.732em; margin-top: -0.061em; flex: none; }
+/* Logo — same as festivelle.love (proportions measured from the client's template): Parisienne wordmark +
+   brush heart ~0.94em tall, 0.25em after the final "e", rising a little above the "F"; tight, slightly heavier
+   lettering as in the template. Keep in sync with web-times src/styles/global.css. */
+.brand-word { font-family: var(--font-parisienne), "Parisienne", cursive; font-weight: 400; line-height: 1; letter-spacing: -0.02em; -webkit-text-stroke: 0.012em currentColor; padding-top: 0.14em; }
+.brand-heart { flex: none; width: 0.917em; height: 0.94em; margin-left: 0.23em; }
 .seal-spin { animation: seal-spin 24s linear infinite; transform-origin: 50% 50%; }
 @keyframes seal-spin { to { transform: rotate(360deg); } }
 
