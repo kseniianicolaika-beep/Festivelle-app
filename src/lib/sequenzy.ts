@@ -3,6 +3,7 @@
 const API = "https://api.sequenzy.com/api/v1";
 
 import { sql } from "./db";
+import { SOCIAL } from "./brand";
 
 // The key comes from SEQUENZY_API_KEY, or — for hosting projects whose env we can't edit (the Festivelle
 // team's Vercel project serving hugs.festivelle.love) — from settings.integrations.sequenzy_api_key in Neon.
@@ -30,7 +31,7 @@ export function brandedEmail(title: string, bodyHtml: string) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;background:#fffaf5;border:1px solid #ecd6c6;border-radius:20px">
 <tr><td style="padding:28px 32px 8px"><p style="margin:0;font-family:Georgia,serif;font-style:italic;font-size:26px;color:#7a1f35">Festivelle</p></td></tr>
 <tr><td style="padding:12px 32px 32px"><h1 style="margin:0 0 20px;font-weight:400;font-size:28px;line-height:1.2;color:#7a1f35">${esc(title)}</h1>${bodyHtml}</td></tr>
-<tr><td style="padding:18px 32px;border-top:1px solid #f0e0d4"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#9a7f78">Festivelle · Celebrate. Create. Belong. · festivelle.love</p></td></tr>
+<tr><td style="padding:18px 32px;border-top:1px solid #f0e0d4"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#9a7f78">Festivelle · Celebrate. Create. Belong. · festivelle.love</p><p style="margin:8px 0 0;font-family:Helvetica,Arial,sans-serif;font-size:12px">${SOCIAL.map((s) => `<a href="${s.url}" style="color:#7a1f35;text-decoration:none">${s.label}</a>`).join(' <span style="color:#d9bfb2">·</span> ')}</p></td></tr>
 </table></td></tr></table></body></html>`;
 }
 

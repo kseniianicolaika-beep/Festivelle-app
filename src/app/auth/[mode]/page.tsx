@@ -7,6 +7,7 @@ import { Petals } from "@/components/fx/Petals";
 import { Sparkles } from "@/components/fx/Sparkles";
 import { Verses } from "@/components/fx/Verses";
 import { Wordmark } from "@/components/brand/Wordmark";
+import { SocialLinks } from "@/components/brand/SocialLinks";
 import Link from "next/link";
 
 export function generateStaticParams() {
@@ -28,7 +29,10 @@ export default async function AuthPage({ params }: { params: Promise<{ mode: str
           <p className="kicker mb-8 text-[#c5a06a]">Made with love in Goa</p>
           <Verses />
         </div>
-        <p className="relative text-sm text-[#fbeee6]/55">Invitations · Event websites · Video invitations · Live RSVPs</p>
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <p className="text-sm text-[#fbeee6]/55">Invitations · Event websites · Video invitations · Live RSVPs</p>
+          <SocialLinks className="-mr-1.5 text-[#f1dcb3]" />
+        </div>
       </section>
 
       {/* Form */}
@@ -51,6 +55,7 @@ export default async function AuthPage({ params }: { params: Promise<{ mode: str
             </>
           )}
           <a href={SITE_URL} className="mt-6 block border-t border-line pt-5 text-center text-xs text-muted underline-offset-4 hover:text-ink hover:underline">← Browse designs and pricing on festivelle.love</a>
+          <SocialLinks className="mt-3 justify-center text-muted lg:hidden" size={17} />
         </div>
       </section>
     </main>

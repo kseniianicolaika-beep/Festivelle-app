@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BRAND } from "@/lib/brand";
+import { SocialLinks } from "@/components/brand/SocialLinks";
 
 const NUMBER = "917218678536"; // Support concierge (WhatsApp)
 const TOPICS = [
@@ -63,6 +64,10 @@ export function SupportHeart({ lift = false }: { lift?: boolean }) {
                 <button disabled={!note.trim()} className="rounded-full bg-[#f1dcb3] px-4 py-2 text-xs font-medium tracking-wide text-[#3a0f1c] transition disabled:opacity-40">Send ♥</button>
               </form>
               <p className="mt-3 text-center text-[10.5px] text-[#fbeee6]/45">Opens a private chat with our team</p>
+              <div className="mt-4 flex items-center justify-center gap-2 border-t border-white/10 pt-3">
+                <span className="text-[10px] uppercase tracking-[0.28em] text-[#f1dcb3]/60">Follow us</span>
+                <SocialLinks className="text-[#f1dcb3]" size={16} />
+              </div>
             </div>
           </motion.div>
         )}
