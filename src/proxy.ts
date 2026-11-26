@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 // The app's own hosts pass through. Everything else is a celebration site:
-//  • <subdomain>.ROOT_DOMAIN — personal links, e.g. anna-mark.festivelle.com
+//  • <subdomain>.ROOT_DOMAIN — personal links, e.g. anna-mark.<ROOT_DOMAIN> (not configured in production yet)
 //  • a host's custom domain (connected through the Vercel Domains API)
 const APP_HOST = /(^localhost(:\d+)?$)|(\.vercel\.app$)/;
 

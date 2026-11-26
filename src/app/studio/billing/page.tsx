@@ -3,7 +3,7 @@ import { currentUser } from "@/lib/auth/server";
 import { sql } from "@/lib/db";
 import { isAdmin } from "@/lib/admin";
 import { activeWorkspace } from "@/lib/workspace";
-import { creditBalance } from "@/lib/commerce";
+import { creditBalance, friendCode } from "@/lib/commerce";
 import { getPricing } from "@/lib/pricing";
 import { Wash } from "@/components/fx/Wash";
 import { StudioNav } from "../StudioNav";
@@ -15,11 +15,12 @@ export default async function Billing() {
   const user = await currentUser();
   if (!user) redirect("/auth/sign-in?next=/studio/billing");
   const { current, list } = await activeWorkspace(user);
-  const [balance, P, orders, usage] = await Promise.all([
+  const [balance, P, orders, usage, code] = await Promise.all([
     creditBalance(user.id),
     getPricing(),
     sql`SELECT id, description, currency, amount_minor, status, created_at FROM orders WHERE user_id = ${user.id} AND status <> 'failed' ORDER BY created_at DESC LIMIT 50` as unknown as Promise<O[]>,
     sql`SELECT COALESCE(SUM(n),0)::int AS n FROM ai_usage WHERE user_id = ${user.id} AND kind = 'text' AND day = current_date` as unknown as Promise<{ n: number }[]>,
+    friendCode(user.id).catch(() => null),
   ]);
   return (
     <main className="relative min-h-dvh overflow-x-clip">
@@ -41,6 +42,13 @@ export default async function Billing() {
             <BuyCredits packs={P.credits.packs} />
           </div>
         </div>
+        {code && (
+          <div className="mt-6 rounded-[28px] border border-line-strong bg-paper/90 p-8">
+            <p className="eyebrow text-muted">Tell a friend</p>
+            <p className="mt-3 text-sm text-muted">Planning friends get <b className="text-ink">{P.referral.percentOff}% off</b> their first package with your code. You get <b className="text-ink">{P.referral.credits} AI credits</b> each time someone uses it.</p>
+            <p className="display mt-4 select-all text-4xl tracking-wider text-rose">{code}</p>
+          </div>
+        )}
         <h2 className="t-h3 mt-16">Your purchases</h2>
         <div className="mt-5 divide-y divide-line-strong border-y border-line-strong">
           {orders.map((o) => (

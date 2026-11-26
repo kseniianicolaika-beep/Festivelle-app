@@ -116,7 +116,7 @@ export function LiveTemplate({ t, kind = "invite", profile, play = "inview", cla
     ) : <div className="h-full w-full" style={{ background: theme.bg }} />;
     return (
       <div ref={ref} onPointerEnter={replay} className={className}>
-        {device === "phone" ? <Phone scroll={scroll}>{site}</Phone> : device === "browser" ? <Browser scroll={scroll} url={`${(p.partner1 ?? "you").toLowerCase()}.festivelle.com`}>{site}</Browser> : <ScaledFrame width={420} scroll={scroll} className="h-full w-full">{site}</ScaledFrame>}
+        {device === "phone" ? <Phone scroll={scroll}>{site}</Phone> : device === "browser" ? <Browser scroll={scroll} url={`hugs.festivelle.love/w/${(p.partner1 ?? "you").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>{site}</Browser> : <ScaledFrame width={420} scroll={scroll} className="h-full w-full">{site}</ScaledFrame>}
       </div>
     );
   }

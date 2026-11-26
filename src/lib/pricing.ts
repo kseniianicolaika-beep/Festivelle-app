@@ -16,6 +16,10 @@ export type Pricing = {
   hosting: { maxMonths: number; afterEventDays: number; extensions: { id: string; months: number; label: string; price: Money }[] };
   credits: { packs: { id: string; credits: number; price: Money }[]; freeTextPerDay: number; textCost: number; freeVisuals: number; visualCost: number; signupCredits: number };
   partners: { defaultCommissionPct: number; featuredMonthly: Money; sponsoredMonthly: Money };
+  /** Suite = website + video invitation of the same tier, bought together, this much cheaper. */
+  suiteDiscountPct: number;
+  /** Personal friend codes: friends get this % off; the sharer gets `referralCredits` AI credits per paid order. */
+  referral: { percentOff: number; credits: number };
 };
 
 const m = (USD: number, INR: number, RUB: number): Money => ({ USD, INR, RUB });
@@ -23,24 +27,24 @@ const m = (USD: number, INR: number, RUB: number): Money => ({ USD, INR, RUB });
 export const DEFAULT_PRICING: Pricing = {
   packages: {
     wedding: {
-      basic: { name: "Essential", price: m(19, 999, 1490), sections: 5, galleryPhotos: 12, pieces: 3, customDomain: false, features: ["Your own link: names.festivelle.com", "5 website sections, 12-photo gallery", "RSVP with live replies", "Invitation + save-the-date"] },
-      premium: { name: "Signature", price: m(39, 1999, 2990), sections: 8, galleryPhotos: 60, pieces: 12, customDomain: false, features: ["Everything in Essential", "All 8 sections, 60-photo gallery", "All 12 pieces: menus, signs, cards", "Guest concierge & email invitations"] },
-      luxury: { name: "Heirloom", price: m(79, 3999, 5990), sections: 8, galleryPhotos: 300, pieces: 12, customDomain: true, features: ["Everything in Signature", "300-photo gallery & guest uploads", "Your own domain, connected for you", "Keepsake archive after the event"] },
+      basic: { name: "Essential", price: m(19, 999, 1490), sections: 5, galleryPhotos: 12, pieces: 3, customDomain: false, features: ["Your wedding website with its own link to share", "Up to 12 photos", "Guests reply online, and you see answers live", "Invitation and save-the-date in the same design"] },
+      premium: { name: "Signature", price: m(39, 1999, 2990), sections: 8, galleryPhotos: 60, pieces: 12, customDomain: false, features: ["Everything in Essential", "Every page of the website, up to 60 photos", "Menus, place cards, signs and thank-you cards: all 12 designs", "Email invitations, a guest helper, and guests can add photos", "No Festivelle credit on your site"] },
+      luxury: { name: "Heirloom", price: m(79, 3999, 5990), sections: 8, galleryPhotos: 300, pieces: 12, customDomain: true, features: ["Everything in Signature", "Up to 300 photos", "Your own web address (like annaandmark.com), connected for you", "A keepsake archive after the day"] },
     },
     celebration: {
-      basic: { name: "Simple", price: m(7, 399, 590), sections: 4, galleryPhotos: 8, pieces: 2, customDomain: false, features: ["Your own link", "4 sections, 8-photo gallery", "RSVP"] },
-      premium: { name: "Signature", price: m(15, 799, 1190), sections: 8, galleryPhotos: 40, pieces: 6, customDomain: false, features: ["All sections, 40-photo gallery", "Invitation, story & thank-you cards", "Email invitations"] },
-      luxury: { name: "Grand", price: m(29, 1499, 2290), sections: 8, galleryPhotos: 150, pieces: 12, customDomain: true, features: ["150-photo gallery", "Every piece", "Custom domain"] },
+      basic: { name: "Simple", price: m(7, 399, 590), sections: 4, galleryPhotos: 8, pieces: 2, customDomain: false, features: ["Your celebration page with its own link", "Up to 8 photos", "Guests reply online"] },
+      premium: { name: "Signature", price: m(15, 799, 1190), sections: 8, galleryPhotos: 40, pieces: 6, customDomain: false, features: ["Every page section, up to 40 photos", "Invitation, story and thank-you cards", "Email invitations, and guests can add photos", "No Festivelle credit on your page"] },
+      luxury: { name: "Grand", price: m(29, 1499, 2290), sections: 8, galleryPhotos: 150, pieces: 12, customDomain: true, features: ["Everything in Signature", "Up to 150 photos", "Every design in the suite", "Your own web address, connected for you"] },
     },
     business: {
-      basic: { name: "Event", price: m(29, 1999, 2490), sections: 6, galleryPhotos: 20, pieces: 4, customDomain: false, features: ["Your own event link", "Invitation, event website & social post", "Registration with live replies", "Email invitations"] },
-      premium: { name: "Professional", price: m(59, 3999, 4990), sections: 8, galleryPhotos: 60, pieces: 12, customDomain: false, features: ["Everything in Event", "Agenda, speakers & sponsors sections", "All 12 pieces: badges, signage, menus", "Guest reminders"] },
-      luxury: { name: "Enterprise", price: m(119, 7999, 9990), sections: 8, galleryPhotos: 300, pieces: 12, customDomain: true, features: ["Everything in Professional", "Your own domain, connected for you", "Brand colours & fonts", "Priority concierge"] },
+      basic: { name: "Event", price: m(29, 1999, 2490), sections: 6, galleryPhotos: 20, pieces: 4, customDomain: false, features: ["Your event page with its own link", "Invitation and a social post in the same design", "Registration with live replies", "Email invitations"] },
+      premium: { name: "Professional", price: m(59, 3999, 4990), sections: 8, galleryPhotos: 60, pieces: 12, customDomain: false, features: ["Everything in Event", "Agenda, speakers and sponsors sections", "Badges, signage and menus: all 12 designs", "Reminders to guests who haven't replied", "No Festivelle credit on your page"] },
+      luxury: { name: "Enterprise", price: m(119, 7999, 9990), sections: 8, galleryPhotos: 300, pieces: 12, customDomain: true, features: ["Everything in Professional", "Your own web address, connected for you", "Your brand colours and fonts", "Priority help from our concierge"] },
     },
     greeting: {
-      basic: { name: "Card", price: m(3, 149, 249), sections: 1, galleryPhotos: 1, pieces: 1, customDomain: false, features: ["No watermark", "HD download & share link"] },
-      premium: { name: "Keepsake card", price: m(5, 249, 390), sections: 3, galleryPhotos: 6, pieces: 2, customDomain: false, features: ["Photo collage", "Animated share page"] },
-      luxury: { name: "Luxe card", price: m(9, 449, 690), sections: 5, galleryPhotos: 20, pieces: 3, customDomain: false, features: ["Everything + matching video greeting preview"] },
+      basic: { name: "Card", price: m(3, 149, 249), sections: 1, galleryPhotos: 1, pieces: 1, customDomain: false, features: ["No watermark", "HD download and a link to share"] },
+      premium: { name: "Keepsake card", price: m(5, 249, 390), sections: 3, galleryPhotos: 6, pieces: 2, customDomain: false, features: ["Everything in Card", "Photo collage", "An animated page to share"] },
+      luxury: { name: "Luxe card", price: m(9, 449, 690), sections: 5, galleryPhotos: 20, pieces: 3, customDomain: false, features: ["Everything in Keepsake card", "A matching video greeting preview"] },
     },
   },
   video: {
@@ -70,6 +74,8 @@ export const DEFAULT_PRICING: Pricing = {
     signupCredits: 0,
   },
   partners: { defaultCommissionPct: 12, featuredMonthly: m(29, 1499, 2290), sponsoredMonthly: m(99, 4999, 7490) },
+  suiteDiscountPct: 15,
+  referral: { percentOff: 10, credits: 20 },
 };
 
 // Deep-merge saved overrides onto defaults so new fields always have values.
@@ -95,6 +101,8 @@ export async function savePricing(p: unknown, by: string) {
 }
 
 const SYMBOL: Record<Currency, string> = { USD: "$", INR: "₹", RUB: "₽" };
+export { suitePrice } from "./pricing-math";
+
 export const fmt = (amount: number, c: Currency) =>
   c === "RUB" ? `${amount.toLocaleString("ru-RU")} ₽` : `${SYMBOL[c]}${amount.toLocaleString(c === "INR" ? "en-IN" : "en-US")}`;
 

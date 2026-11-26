@@ -33,7 +33,7 @@ function Expired({ names }: { names: string }) {
 
 const media = (k?: string | null) => (k ? `/api/media?key=${encodeURIComponent(k)}` : null);
 
-// Shared by /w/[slug], personal subdomains (anna-mark.festivelle.com) and custom domains.
+// Shared by /w/[slug], personal subdomains (when ROOT_DOMAIN is configured) and custom domains.
 export async function SiteBySlug({ slug, g }: { slug: string; g?: string | null }) {
   const w = await getWeddingBySlug(slug);
   if (!w) notFound();
@@ -68,8 +68,9 @@ export async function SiteBySlug({ slug, g }: { slug: string; g?: string | null 
         {brand.logoKey && <img src={media(brand.logoKey)!} alt="" className="h-6 w-auto" />}
         Designed with love by {brand.name}{brand.credit === "show" ? ` · made with ${BRAND.name}` : ""}
       </span>
-    ) : (
-      <span>made with ♥ on {BRAND.name}</span>
+    ) : w.tier === "premium" || w.tier === "luxury" ? null : (
+      // Essential sites (and previews) carry a small link back; Signature and up are credit-free.
+      <a href={`${SITE_URL}/?utm_source=guest_site&utm_medium=credit`} target="_blank" rel="noopener" className="hover:underline">made with ♥ on {BRAND.name}</a>
     );
 
   return (

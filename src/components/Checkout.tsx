@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { track } from "@/components/Analytics";
 
 type Currency = "USD" | "INR" | "RUB";
-type Quote = { description: string; list: number; amount: number; currency: Currency; promo?: string; upgradeFrom?: string | null };
+type Quote = { description: string; list: number; amount: number; currency: Currency; promo?: string; upgradeFrom?: string | null; includes?: string[] };
 type Provider = { id: string; label: string; note: string };
 
 const SYM = { USD: "$", INR: "₹", RUB: "₽" } as const;
@@ -40,8 +41,11 @@ export function Checkout({ product, weddingId, currency: initial, onClose }: { p
     return () => { live = false; };
   }, [product, currency, weddingId, applied]);
 
+  useEffect(() => { track("checkout_opened", { product }); }, [product]);
+
   async function pay(provider: string) {
     setBusy(provider);
+    track("checkout_started", { product, provider, currency });
     const r = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ product, currency, weddingId, promo: applied, provider, phone }) });
     const j = await r.json();
     if (!r.ok) { setError(j.error); setBusy(null); return; }
@@ -71,9 +75,17 @@ export function Checkout({ product, weddingId, currency: initial, onClose }: { p
               {quote.amount !== quote.list && <p className="text-muted line-through">{money(quote.list, quote.currency)}</p>}
               <p className="display foil text-6xl">{money(quote.amount, quote.currency)}</p>
               {quote.upgradeFrom && <p className="mt-1 text-xs text-muted">What you already paid is credited.</p>}
+              {!quote.upgradeFrom && <p className="mt-1 text-xs text-muted">One-time · never renews</p>}
             </motion.div>
           )}
         </AnimatePresence>
+
+        {quote?.includes?.length ? (
+          <details className="mt-4 rounded-2xl bg-white/60 px-4 py-3 text-sm" open>
+            <summary className="cursor-pointer text-xs uppercase tracking-widest text-muted">What’s included</summary>
+            <ul className="mt-2 space-y-1">{quote.includes.map((f) => <li key={f} className="flex gap-2"><span className="text-rose">♡</span><span>{f}</span></li>)}</ul>
+          </details>
+        ) : null}
 
         <form onSubmit={(e) => { e.preventDefault(); setApplied(promo.trim().toUpperCase()); }} className="mt-5 flex gap-2">
           <input value={promo} onChange={(e) => setPromo(e.target.value)} placeholder="Promo or partner code" className="field !py-2 !text-sm" />
@@ -96,7 +108,17 @@ export function Checkout({ product, weddingId, currency: initial, onClose }: { p
               <span className="text-rose">{busy === p.id ? "…" : "→"}</span>
             </button>
           ))}
-          {quote && !providers.length && <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">Payments in {currency} open very soon. Try another currency, or write to us via the heart below and we’ll publish it for you.</p>}
+          {quote && !providers.length && (
+            <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+              <p>{currency === "RUB" ? "Paying in roubles isn’t available yet. If you have an international card, you can pay in dollars or rupees today:" : `Payments in ${currency} aren’t available yet. You can pay in another currency:`}</p>
+              <div className="mt-3 flex gap-2">
+                {(["USD", "INR"] as Currency[]).filter((c) => c !== currency).map((c) => (
+                  <button key={c} onClick={() => setCurrency(c)} className="btn btn-ghost !px-4 !py-1.5 text-sm">Pay in {c}</button>
+                ))}
+              </div>
+              <p className="mt-3 text-xs">Or write to us via the heart below and we’ll find a way together.</p>
+            </div>
+          )}
         </div>
         <p className="mt-5 text-center text-[11px] text-muted">Secure checkout. Your link goes live the moment payment is confirmed.<br />By paying you agree to our <a href="https://festivelle.love/terms/" target="_blank" rel="noopener noreferrer" className="underline">Terms</a> and <a href="https://festivelle.love/refunds/" target="_blank" rel="noopener noreferrer" className="underline">Cancellation &amp; Refund Policy</a>.</p>
       </motion.div>

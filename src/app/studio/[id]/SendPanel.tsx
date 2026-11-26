@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { Wedding } from "@/lib/db";
 import type { Pricing, Tier } from "@/lib/pricing";
+import { suitePrice } from "@/lib/pricing-math";
+import { track } from "@/components/Analytics";
 import { priceGroup, displayNames } from "@/lib/occasions";
 import { Checkout, guessCurrency, money } from "@/components/Checkout";
 import { LiveRsvps } from "./LiveRsvps";
@@ -18,6 +20,7 @@ function Publishing({ wedding, published, onPublish, origin }: { wedding: Weddin
   // Package chosen on festivelle.love/pricing (remembered by the studio) is highlighted instead of "most loved".
   const [hint] = useState<Tier | null>(() => { try { const h = sessionStorage.getItem(`fv-tier-${wedding.id}`); return TIERS.includes(h as Tier) ? (h as Tier) : null; } catch { return null; } });
   const star: Tier = hint ?? "premium";
+  useEffect(() => { track("share_opened", { paid: !!wedding.tier }); }, [wedding.tier]);
   useEffect(() => {
     fetch("/api/pricing").then((r) => r.json()).then((j) => setPricing(j.pricing));
   }, []);
@@ -32,7 +35,7 @@ function Publishing({ wedding, published, onPublish, origin }: { wedding: Weddin
       {!wedding.tier ? (
         <>
           <p className="font-medium">Make it yours to share</p>
-          <p className="text-sm text-muted">Designing is free forever. Choose a package to get your own link{wedding.subdomain ? "" : " like anna-mark.festivelle.com"}.</p>
+          <p className="text-sm text-muted">Designing is free, as long as you like. Pay once to share it: your link <span className="text-ink">{`${origin.replace(/^https?:\/\//, "")}/w/${wedding.slug}`}</span> goes live the moment payment is confirmed. No subscription, never auto-renews.</p>
         </>
       ) : (
         <div className="flex items-center justify-between gap-3">
@@ -54,12 +57,30 @@ function Publishing({ wedding, published, onPublish, origin }: { wedding: Weddin
             <motion.button key={t} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} onClick={() => setBuy(`site_${t}`)}
               className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg ${t === star ? "border-rose bg-white" : "border-line bg-white/60"}`}>
               <div className="flex items-baseline justify-between">
-                <span className="display text-2xl">{pk[t].name}{t === star && <span className="ml-2 align-middle text-[10px] uppercase tracking-widest text-rose">{hint ? "your choice" : "most loved"}</span>}</span>
+                <span className="display text-2xl">{pk[t].name}{t === star && <span className="ml-2 align-middle text-[10px] uppercase tracking-widest text-rose">{hint ? "your choice" : "recommended"}</span>}</span>
                 <span className="display text-2xl">{money(pk[t].price[currency], currency)}</span>
               </div>
               <ul className="mt-2 space-y-0.5 text-xs text-muted">{pk[t].features.map((f) => <li key={f}>♡ {f}</li>)}</ul>
             </motion.button>
           ))}
+        </div>
+      )}
+
+      {pricing && pk && !wedding.tier && !wedding.video_tier && group !== "greeting" && (
+        <div className="mt-4 rounded-2xl border border-dashed border-rose/50 bg-white/50 p-4">
+          <p className="text-[10px] uppercase tracking-widest text-rose">Suite · save {pricing.suiteDiscountPct}%</p>
+          <p className="mt-1 text-sm text-muted">The website and a video invitation in the same design, bought together.</p>
+          <div className="mt-2 grid gap-2">
+            {(["premium", "luxury"] as Tier[]).map((t) => {
+              const sp = suitePrice(pricing, group, t, currency);
+              return (
+                <button key={t} onClick={() => setBuy(`suite_${t}`)} className="flex items-baseline justify-between rounded-xl border border-line bg-white/70 px-4 py-2.5 text-left text-sm transition hover:border-rose">
+                  <span>{pk[t].name} + {pricing.video[t].name} video</span>
+                  <span><span className="mr-1.5 text-xs text-muted line-through">{money(sp.full, currency)}</span><span className="display text-lg">{money(sp.price, currency)}</span></span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 

@@ -1,18 +1,19 @@
 import { isUnlimitedId } from "./admin";
 import { sql, type Wedding } from "./db";
-import { getPricing, isTier, TIERS, type Currency, type Pricing, type Tier } from "./pricing";
+import { getPricing, isTier, suitePrice, TIERS, type Currency, type Pricing, type Tier } from "./pricing";
 import { displayNames, priceGroup } from "./occasions";
 import type { Profile } from "./profile";
 
-// Products: site_<tier> · video_<tier> · host_<3|6|12|keepsake> · credits_<n>
-export type Quote = { product: string; description: string; list: number; amount: number; currency: Currency; promo?: string; partnerId?: string | null; commissionPct: number; upgradeFrom?: Tier | null };
+// Products: site_<tier> · video_<tier> · suite_<tier> (site + video) · host_<3|6|12|keepsake> · credits_<n> · check_inr (admin ₹1 test)
+export type Quote = { product: string; description: string; list: number; amount: number; currency: Currency; promo?: string; partnerId?: string | null; commissionPct: number; upgradeFrom?: Tier | null; includes?: string[]; referrerId?: string | null };
 
 const rank = (t?: string | null) => (isTier(t) ? TIERS.indexOf(t) : -1);
 
-export async function quote(product: string, currency: Currency, wedding: Pick<Wedding, "profile" | "tier" | "video_tier"> | null, promoCode?: string | null, refCode?: string | null): Promise<Quote | { error: string }> {
+export async function quote(product: string, currency: Currency, wedding: Pick<Wedding, "profile" | "tier" | "video_tier"> | null, promoCode?: string | null, refCode?: string | null, buyerId?: string | null): Promise<Quote | { error: string }> {
   const P = await getPricing();
   let list = 0;
   let description = "";
+  let includes: string[] | undefined;
   let upgradeFrom: Tier | null = null;
   const [kind, arg] = [product.split("_")[0], product.slice(product.indexOf("_") + 1)];
   const names = wedding ? displayNames(wedding.profile) : "";
@@ -27,6 +28,16 @@ export async function quote(product: string, currency: Currency, wedding: Pick<W
     // Upgrades are charged the difference — nobody pays twice.
     if (isTier(current)) { list = Math.max(list - table[current].price[currency], 0); upgradeFrom = current; }
     description = `${kind === "site" ? "Website" : "Video"} · ${table[arg].name}${upgradeFrom ? ` (upgrade)` : ""} · ${names}`;
+    includes = table[arg].features;
+  } else if (kind === "suite") {
+    if (!wedding) return { error: "Choose a celebration first." };
+    if (!isTier(arg)) return { error: "Unknown package." };
+    const group = priceGroup(wedding.profile);
+    if (group === "greeting") return { error: "Suites are for celebrations with a website." };
+    if (wedding.tier || wedding.video_tier) return { error: "You already have part of this suite — upgrade the website or add the video on its own." };
+    list = suitePrice(P, group, arg, currency).price;
+    description = `Suite · ${P.packages[group][arg].name} website + ${P.video[arg].name} video · ${names}`;
+    includes = [...P.packages[group][arg].features, `${P.video[arg].name} video invitation: ${P.video[arg].features.join(", ").toLowerCase()}`];
   } else if (kind === "host") {
     if (!wedding?.tier) return { error: "Hosting extensions apply to a published celebration." };
     const ext = P.hosting.extensions.find((e) => e.id === product);
@@ -42,14 +53,17 @@ export async function quote(product: string, currency: Currency, wedding: Pick<W
 
   let amount = list;
   let partnerId: string | null = null;
+  let referrerId: string | null = null;
   let promo: string | undefined;
   if (promoCode) {
-    const r = (await sql`SELECT code, percent_off, partner_id FROM promos WHERE code = ${promoCode.trim().toUpperCase()} AND active
-      AND (expires_at IS NULL OR expires_at > now()) AND (max_uses IS NULL OR uses < max_uses)`) as { code: string; percent_off: number; partner_id: string | null }[];
+    const r = (await sql`SELECT code, percent_off, partner_id, owner_user_id FROM promos WHERE code = ${promoCode.trim().toUpperCase()} AND active
+      AND (expires_at IS NULL OR expires_at > now()) AND (max_uses IS NULL OR uses < max_uses)`) as { code: string; percent_off: number; partner_id: string | null; owner_user_id: string | null }[];
     if (!r[0]) return { error: "That code isn’t valid any more." };
+    if (r[0].owner_user_id && buyerId && r[0].owner_user_id === buyerId) return { error: "That’s your own friend code — share it with friends instead." };
     promo = r[0].code;
-    amount = Math.round(list * (100 - r[0].percent_off)) / 100;
+    amount = Math.round((list * (100 - r[0].percent_off)) / 100); // whole rupees / dollars / roubles
     partnerId = r[0].partner_id;
+    referrerId = r[0].owner_user_id;
   }
   let commissionPct = 0;
   const ref = partnerId ? sql`SELECT id, commission_pct FROM partners WHERE id = ${partnerId} AND active` : refCode ? sql`SELECT id, commission_pct FROM partners WHERE ref_code = ${refCode} AND active` : null;
@@ -57,7 +71,7 @@ export async function quote(product: string, currency: Currency, wedding: Pick<W
     const r = (await ref) as { id: string; commission_pct: string }[];
     if (r[0]) { partnerId = r[0].id; commissionPct = Number(r[0].commission_pct); }
   }
-  return { product, description, list, amount: Math.round(amount * 100) / 100, currency, promo, partnerId, commissionPct, upgradeFrom };
+  return { product, description, list, amount: Math.round(amount * 100) / 100, currency, promo, partnerId, commissionPct, upgradeFrom, includes, referrerId };
 }
 
 const addMonths = (d: Date, n: number) => { const x = new Date(d); x.setUTCMonth(x.getUTCMonth() + n); return x; };
@@ -119,16 +133,23 @@ export async function activate(weddingId: string) {
   return true;
 }
 
-type Order = { id: string; user_id: string; wedding_id: string | null; product: string; status: string; promo_code: string | null };
+type Order = { id: string; user_id: string; wedding_id: string | null; product: string; status: string; promo_code: string | null; amount_minor: number };
 
 // Idempotent: only the first caller that flips pending→paid applies the purchase.
 export async function fulfil(orderId: string) {
   const [o] = (await sql`UPDATE orders SET status = 'paid', paid_at = now() WHERE id = ${orderId} AND status = 'pending' RETURNING *`) as Order[];
   if (!o) return false;
   const [kind, arg] = [o.product.split("_")[0], o.product.slice(o.product.indexOf("_") + 1)];
-  if (o.promo_code) await sql`UPDATE promos SET uses = uses + 1 WHERE code = ${o.promo_code}`;
+  if (o.promo_code) {
+    // Friend codes: the sharer gets AI credits for every paid order that used their code (never their own).
+    const [p] = (await sql`UPDATE promos SET uses = uses + 1 WHERE code = ${o.promo_code} RETURNING owner_user_id`) as { owner_user_id: string | null }[];
+    if (p?.owner_user_id && p.owner_user_id !== o.user_id && o.amount_minor > 0) await addCredits(p.owner_user_id, (await getPricing()).referral.credits).catch(() => {});
+  }
   if (kind === "site" && o.wedding_id) {
     await sql`UPDATE weddings SET tier = ${arg} WHERE id = ${o.wedding_id}`;
+    await activate(o.wedding_id);
+  } else if (kind === "suite" && o.wedding_id) {
+    await sql`UPDATE weddings SET tier = ${arg}, video_tier = ${arg} WHERE id = ${o.wedding_id}`;
     await activate(o.wedding_id);
   } else if (kind === "video" && o.wedding_id) {
     await sql`UPDATE weddings SET video_tier = ${arg} WHERE id = ${o.wedding_id}`;
@@ -168,4 +189,21 @@ export async function meter(userId: string, kind: "text" | "visual") {
   }
   await sql`INSERT INTO ai_usage (user_id, kind, n) VALUES (${userId}, ${kind}, 1) ON CONFLICT (user_id, day, kind) DO UPDATE SET n = ai_usage.n + 1`;
   return true;
+}
+
+/** The user's personal friend code (created on first use). Friends get `referral.percentOff` off; the sharer earns credits. */
+export async function friendCode(userId: string): Promise<string> {
+  const have = (await sql`SELECT code FROM promos WHERE owner_user_id = ${userId}`) as { code: string }[];
+  if (have[0]) return have[0].code;
+  const P = await getPricing();
+  const abc = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  for (let i = 0; i < 5; i++) {
+    const code = "FRIEND-" + Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => abc[b % abc.length]).join("");
+    const r = (await sql`INSERT INTO promos (code, percent_off, owner_user_id) VALUES (${code}, ${P.referral.percentOff}, ${userId})
+      ON CONFLICT DO NOTHING RETURNING code`) as { code: string }[];
+    if (r[0]) return r[0].code;
+    const again = (await sql`SELECT code FROM promos WHERE owner_user_id = ${userId}`) as { code: string }[];
+    if (again[0]) return again[0].code;
+  }
+  throw new Error("Couldn't create a friend code");
 }

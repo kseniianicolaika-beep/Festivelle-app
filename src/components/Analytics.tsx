@@ -24,11 +24,21 @@ function readConsent(): string | null {
 }
 
 let started = false;
+type PH = { capture: (e: string, p?: Record<string, unknown>) => void; identify: (id: string) => void };
+let ph: PH | null = null;
+const queue: [string, Record<string, unknown> | undefined][] = [];
+/** Product analytics event. Only sent if the visitor accepted analytics; otherwise dropped. Never on guest sites. */
+export function track(event: string, props?: Record<string, unknown>) {
+  if (ph) ph.capture(event, props);
+  else if (readConsent() === "yes" && queue.length < 20) queue.push([event, props]);
+}
 async function start() {
   if (started) return;
   started = true;
   const { default: posthog } = await import("posthog-js");
   posthog.init(PH_KEY, { api_host: PH_HOST, capture_pageview: "history_change", person_profiles: "identified_only" });
+  ph = posthog as unknown as PH;
+  for (const [e, p] of queue.splice(0)) ph.capture(e, p);
   if (HS_PORTAL && !document.getElementById("hs-script-loader")) {
     const s = document.createElement("script");
     s.id = "hs-script-loader";

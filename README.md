@@ -52,6 +52,50 @@ illustrations, then credit packs (20 credits $5, 60 credits $12). Why not $3/$5/
 purchase priced like a template signals “cheap” and leaves no margin after payment fees; the low-ticket occasions keep
 an accessible entry point, and regional INR/RUB prices keep it affordable.
 
+## Pricing clarity, conversion & retention (2026-11-26)
+
+The aim is to make it obvious what's free, what you get and when you pay, without pressure: no countdowns or pop-ups.
+
+- **Plain-language packages.** `DEFAULT_PRICING` features in `src/lib/pricing.ts` describe what guests see ("Up to 60
+  photos", "Menus, place cards, signs…"). The website mirrors them in EN/RU (`Festivelle/src/lib/site.ts`).
+- **Honest links.** Guest links are `hugs.festivelle.love/w/<slug>`. Personal subdomains only work once
+  `ROOT_DOMAIN`/`NEXT_PUBLIC_ROOT_DOMAIN` and wildcard DNS exist, which isn't the case in production yet, so no copy
+  promises them.
+- **Studio hint.** `FreeHint` (studio header, desktop) reads "Free while you design · from ₹999 once, when you share" until
+  the celebration has a package.
+- **Checkout** (`src/components/Checkout.tsx`) shows "One-time · never renews", a **What's included** list
+  (`quote().includes`) and links to Terms and the Cancellation & Refund Policy. If a currency has no payment method
+  (roubles until YooKassa or NOWPayments keys exist), it explains that and offers **Pay in USD / INR** buttons, so there's
+  no dead end.
+- **Suite bundle.** `suite_<premium|luxury>` = website + video invitation of the same tier at `suiteDiscountPct`
+  (15%) off (`suitePrice` in `src/lib/pricing-math.ts`, client-safe). It's only for celebrations with no package yet
+  and not for greeting cards. The Share panel offers it; fulfilment sets both `tier` and `video_tier`.
+- **Friend codes.** Every user gets a personal code (`FRIEND-XXXXXX`, `promos.owner_user_id`) on `/studio/billing`.
+  Friends get `referral.percentOff` (10%) off; the sharer earns `referral.credits` (20) AI credits per paid order. Using
+  your own code is refused. Promo prices round to whole units.
+- **Guest-site credit.** Essential/Simple/Event sites (and previews) show a small "made with ♥ on Festivelle" link to
+  festivelle.love (`utm_source=guest_site`). Signature and higher packages are credit-free (also listed as a feature).
+  Agency white-label rules are unchanged.
+- **Lifecycle emails** (`src/lib/lifecycle.ts`, EN/RU by the celebration's language), run daily by Vercel Cron
+  (`vercel.json` → `/api/cron/daily`, 03:30 UTC = 09:00 IST):
+  - hosting ends in 14 days (resets after an extension) · a week before the event (replies + checklist) · 1–3 days after
+    (thank-you card) · Mondays before the event if new replies came in · wedding anniversary (opt-in only) · unfinished
+    unpaid draft after 2 days and after 7 days, then never again.
+  - **At most one email per person per day**, the most time-sensitive first. Never sent to the Festivelle team
+    (`OWNER_EMAILS`, `ADMIN_EMAILS`, `@festivelle.love`). Each (celebration, kind) is sent once (`email_log`).
+  - **One-click unsubscribe** link in every email (`/api/email/unsubscribe`, HMAC-signed with
+    `settings.integrations.email_link_secret`, created on first use; `EMAIL_LINK_SECRET` env overrides). Hosts can also
+    switch reminders and the anniversary note on/off in **Studio → Settings** (`email_prefs`).
+  - **Cron auth.** If `CRON_SECRET` is set in Vercel, only that bearer token is accepted (Vercel sends it automatically).
+    Without it, only Vercel's scheduler (`vercel-cron/` user agent) can trigger a real run. That's harmless if repeated,
+    because each email is claimed once. `?dry=1` (lists recipients) always needs `CRON_SECRET`. Setting `CRON_SECRET`
+    in the Festivelle Vercel project is recommended.
+- **Funnel analytics** (PostHog EU, only after the visitor accepts cookies; never on guest sites): `share_opened`,
+  `checkout_opened`, `checkout_started` (provider, currency), `purchase_completed` (on return from payment), plus
+  page views. The website sends cookie-free `pricing_group_selected` and `plan_clicked`. Suggested PostHog funnel:
+  pricing page → sign-up → `share_opened` → `checkout_opened` → `checkout_started` → `purchase_completed`. There's no
+  baseline from before these events existed, so compare week over week from 2026-11-26.
+
 ## Payments (Russia supported)
 
 Stripe and PayPal don't serve Russian cards, so checkout offers the right acquirer per currency

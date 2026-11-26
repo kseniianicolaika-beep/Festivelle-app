@@ -24,6 +24,8 @@ import { Heart } from "@/components/fx/Heart";
 import { Seal, Wordmark } from "@/components/brand/Wordmark";
 import { assetUrl, uploadAsset, type Asset } from "@/lib/upload-client";
 import { SendPanel } from "./SendPanel";
+import { FreeHint } from "./FreeHint";
+import { priceGroup } from "@/lib/occasions";
 import { openSupport } from "@/components/SupportHeart";
 import { Gallery, type Pick } from "./Gallery";
 import { EditorShell } from "./editor/EditorShell";
@@ -327,6 +329,7 @@ export function Studio({ wedding, initialMessages, initialDocs, initialPhotos, r
           </button>
           <Collab weddingId={wedding.id} realtimeUrl={realtimeUrl} docId={doc?.id} path={selectedPath} onRemoteChange={pullRemote} onPeers={setPeers} />
           <Link href={`/studio/${wedding.id}/video`} className="link-u hidden px-2 text-[13px] text-ink-soft sm:inline" title="Video invitation">▶ Video</Link>
+          {editable && !published && !wedding.tier && <FreeHint group={priceGroup(wedding.profile)} />}
           {editable && <button onClick={() => setPanel(true)} className="btn btn-dark !px-4 !py-2 md:!px-5 md:!py-2.5">{published ? "Share" : "Publish ♥"}</button>}
         </div>
       </header>

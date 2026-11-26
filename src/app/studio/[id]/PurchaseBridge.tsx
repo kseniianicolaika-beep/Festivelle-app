@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Checkout, guessCurrency } from "@/components/Checkout";
+import { track } from "@/components/Analytics";
 
 // Handles `?buy=<product>` (e.g. from the video studio) and the `?paid=` / `?pending=` return from checkout.
 export function PurchaseBridge({ weddingId }: { weddingId: string }) {
@@ -11,8 +12,9 @@ export function PurchaseBridge({ weddingId }: { weddingId: string }) {
     /* eslint-disable react-hooks/set-state-in-effect -- reads the URL once after mount */
     const q = new URLSearchParams(window.location.search);
     const b = q.get("buy");
-    if (b && /^(site|video|host|credits)_[a-z0-9]+$/.test(b)) setBuy(b);
-    if (q.get("paid")) setNote(q.get("paid")!.startsWith("site") ? "Thank you ♥ Your site is live — share it from “Share”." : "Thank you ♥ Your purchase is ready.");
+    if (b && /^(site|video|suite|host|credits)_[a-z0-9]+$/.test(b)) setBuy(b);
+    if (q.get("paid")) track("purchase_completed", { product: q.get("paid") });
+    if (q.get("paid")) setNote(/^(site|suite)/.test(q.get("paid")!) ? "Thank you ♥ Your site is live — share it from “Share”." : "Thank you ♥ Your purchase is ready.");
     if (q.get("pending")) setNote("We’re waiting for the payment to be confirmed — this usually takes a moment. Refresh shortly.");
     if (b || q.get("paid") || q.get("pending")) window.history.replaceState(null, "", window.location.pathname);
   }, []);

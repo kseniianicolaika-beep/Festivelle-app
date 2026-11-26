@@ -186,6 +186,20 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS orders_user_idx ON orders(user_id, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS orders_ref_idx ON orders(provider, provider_ref)`,
   `ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_ref text`,
+  `ALTER TABLE promos ADD COLUMN IF NOT EXISTS owner_user_id text`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS promos_owner_idx ON promos(owner_user_id) WHERE owner_user_id IS NOT NULL`,
+  `CREATE TABLE IF NOT EXISTS email_log (
+    wedding_id uuid NOT NULL REFERENCES weddings(id) ON DELETE CASCADE,
+    kind text NOT NULL,
+    sent_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (wedding_id, kind)
+  )`,
+  `CREATE TABLE IF NOT EXISTS email_prefs (
+    email text PRIMARY KEY,
+    unsubscribed boolean NOT NULL DEFAULT false,
+    anniversary boolean NOT NULL DEFAULT false,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
   `CREATE TABLE IF NOT EXISTS credits (
     user_id text PRIMARY KEY,
     balance int NOT NULL DEFAULT 0,

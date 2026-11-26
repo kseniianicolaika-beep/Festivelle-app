@@ -22,7 +22,7 @@ export type Wedding = {
   video_tier: "basic" | "premium" | "luxury" | null; // purchased video invitation/greeting
   activated_at: string | null; // first publish after payment
   expires_at: string | null; // hosting end: min(activated+12mo, event+30d) + extensions
-  subdomain: string | null; // anna-mark → anna-mark.festivelle.com
+  subdomain: string | null; // anna-mark → anna-mark.<ROOT_DOMAIN> (only when ROOT_DOMAIN + wildcard DNS are set)
 };
 
 type U = { id: string } & Parameters<typeof isAdmin>[0];

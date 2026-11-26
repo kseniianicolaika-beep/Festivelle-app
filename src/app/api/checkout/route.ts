@@ -14,7 +14,7 @@ async function context(req: Request, b: Record<string, unknown>) {
   const wedding = typeof b.weddingId === "string" && b.weddingId ? await getWeddingForUser(b.weddingId, user) : null;
   if (b.weddingId && !wedding) return { error: Response.json({ error: "Not found" }, { status: 404 }) } as const;
   const ref = (await cookies()).get("fv_ref")?.value ?? null;
-  const q = await quote(String(b.product ?? ""), currency, wedding, typeof b.promo === "string" && b.promo ? b.promo : null, ref);
+  const q = await quote(String(b.product ?? ""), currency, wedding, typeof b.promo === "string" && b.promo ? b.promo : null, ref, user.id);
   const admin = isAdmin(user);
   return { user, wedding, currency, q, admin } as const;
 }
