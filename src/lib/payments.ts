@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Currency } from "./pricing";
+import { sql } from "./db";
 
 // Payment providers. Russia needs a local acquirer because Stripe/PayPal don't serve Russian cards:
 //  • YooKassa  — Russian cards, МИР, SberPay, СБП, YooMoney (RUB). Needs a Russian legal entity / ИП / самозанятый.
@@ -9,24 +10,51 @@ import type { Currency } from "./pricing";
 // Every provider is verified server-to-server before fulfilment, so a forged redirect/webhook can't unlock anything.
 
 export type ProviderId = "yookassa" | "razorpay" | "nowpayments" | "test";
-export type OrderForPayment = { id: string; currency: Currency; amount_minor: number; description: string; email?: string | null; provider_ref?: string | null };
+export type OrderForPayment = { id: string; currency: Currency; amount_minor: number; description: string; email?: string | null; name?: string | null; phone?: string | null; provider_ref?: string | null };
+
+/** Razorpay refuses international (USD) payment links without the customer's name, email and phone. */
+export const needsPhone = (provider: ProviderId, currency: Currency) => provider === "razorpay" && currency === "USD";
+/** Loose international phone check: optional +, 8–15 digits once spaces, dashes and brackets are dropped. */
+export const cleanPhone = (v: unknown) => { const s = typeof v === "string" ? v.replace(/[\s().-]/g, "") : ""; return /^\+?\d{8,15}$/.test(s) ? s : null; };
 type Created = { url: string; ref: string };
+
+// Razorpay keys: env vars win (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET); otherwise they come from
+// settings.integrations in Neon (razorpay_key_id, razorpay_key_secret, razorpay_webhook_secret) — the Festivelle team's
+// Vercel project serving hugs.festivelle.love gets them that way, like the AI keys (ai-keys.ts). Server-only.
+type RzKeys = { id: string; secret: string; webhook: string };
+let rzCache: { keys: RzKeys; at: number } | null = null;
+const rzEnv = (): RzKeys => ({ id: process.env.RAZORPAY_KEY_ID?.trim() ?? "", secret: process.env.RAZORPAY_KEY_SECRET?.trim() ?? "", webhook: process.env.RAZORPAY_WEBHOOK_SECRET?.trim() ?? "" });
+/** Current Razorpay keys (env, else the last database read). Call loadPaymentKeys() first in a request. */
+function rz(): RzKeys {
+  const e = rzEnv(), c = rzCache?.keys;
+  return { id: e.id || c?.id || "", secret: e.secret || c?.secret || "", webhook: e.webhook || c?.webhook || "" };
+}
+/** Refresh database-held payment keys (cached 5 min). Cheap to call at the start of every payment request. */
+export async function loadPaymentKeys() {
+  const e = rzEnv();
+  if (e.id && e.secret && e.webhook) return;
+  if (rzCache && Date.now() - rzCache.at < 300_000) return;
+  const r = (await sql`SELECT value->>'razorpay_key_id' AS id, value->>'razorpay_key_secret' AS secret, value->>'razorpay_webhook_secret' AS webhook FROM settings WHERE key = 'integrations'`.catch(() => [])) as { id: string | null; secret: string | null; webhook: string | null }[];
+  rzCache = { keys: { id: (r[0]?.id ?? "").trim(), secret: (r[0]?.secret ?? "").trim(), webhook: (r[0]?.webhook ?? "").trim() }, at: Date.now() };
+}
 
 const basic = (u: string, p: string) => "Basic " + Buffer.from(`${u}:${p}`).toString("base64");
 const major = (minor: number) => (minor / 100).toFixed(2);
 
 export const PROVIDERS: Record<ProviderId, { label: string; note: string; currencies: Currency[]; enabled: () => boolean }> = {
   yookassa: { label: "Банковская карта, СБП, SberPay", note: "Russian cards & МИР · YooKassa", currencies: ["RUB"], enabled: () => !!(process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY) },
-  razorpay: { label: "UPI, cards, netbanking", note: "India & international cards · Razorpay", currencies: ["INR", "USD"], enabled: () => !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) },
+  razorpay: { label: "UPI, cards, netbanking", note: "India & international cards · Razorpay", currencies: ["INR", "USD"], enabled: () => !!(rz().id && rz().secret) },
   nowpayments: { label: "Crypto (USDT, BTC, TON…)", note: "Works worldwide · NOWPayments", currencies: ["USD"], enabled: () => !!process.env.NOWPAYMENTS_API_KEY },
   test: { label: "Test payment", note: "Sandbox — no money moves", currencies: ["USD", "INR", "RUB"], enabled: () => process.env.PAYMENTS_TEST_MODE === "1" },
 };
 
-export function providersFor(currency: Currency, admin = false): ProviderId[] {
+export async function providersFor(currency: Currency, admin = false): Promise<ProviderId[]> {
+  await loadPaymentKeys();
   return (Object.keys(PROVIDERS) as ProviderId[]).filter((p) => PROVIDERS[p].currencies.includes(currency) && (PROVIDERS[p].enabled() || (p === "test" && admin && process.env.NODE_ENV !== "production")));
 }
 
 export async function createPayment(provider: ProviderId, o: OrderForPayment, base: string): Promise<Created> {
+  await loadPaymentKeys();
   const back = `${base}/api/payments/return?order=${o.id}`;
   switch (provider) {
     case "yookassa": {
@@ -51,8 +79,8 @@ export async function createPayment(provider: ProviderId, o: OrderForPayment, ba
     case "razorpay": {
       const res = await fetch("https://api.razorpay.com/v1/payment_links", {
         method: "POST",
-        headers: { authorization: basic(process.env.RAZORPAY_KEY_ID!, process.env.RAZORPAY_KEY_SECRET!), "content-type": "application/json" },
-        body: JSON.stringify({ amount: o.amount_minor, currency: o.currency, description: o.description.slice(0, 2048), reference_id: o.id, callback_url: back, callback_method: "get", notes: { order_id: o.id }, ...(o.email ? { customer: { email: o.email } } : {}) }),
+        headers: { authorization: basic(rz().id, rz().secret), "content-type": "application/json" },
+        body: JSON.stringify({ amount: o.amount_minor, currency: o.currency, description: o.description.slice(0, 2048), reference_id: o.id, callback_url: back, callback_method: "get", notes: { order_id: o.id }, customer: { ...(o.email ? { email: o.email } : {}), ...(o.name ? { name: o.name.slice(0, 100) } : {}), ...(o.phone ? { contact: o.phone } : {}) } }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(`Razorpay: ${j.error?.description ?? res.status}`);
@@ -75,6 +103,7 @@ export async function createPayment(provider: ProviderId, o: OrderForPayment, ba
 
 // Ask the provider whether this order is paid. `hint` is a provider payment id from a webhook (crypto).
 export async function isPaid(provider: ProviderId, o: OrderForPayment, hint?: string): Promise<boolean> {
+  await loadPaymentKeys();
   switch (provider) {
     case "yookassa": {
       if (!o.provider_ref) return false;
@@ -84,7 +113,7 @@ export async function isPaid(provider: ProviderId, o: OrderForPayment, hint?: st
     }
     case "razorpay": {
       if (!o.provider_ref) return false;
-      const r = await fetch(`https://api.razorpay.com/v1/payment_links/${o.provider_ref}`, { headers: { authorization: basic(process.env.RAZORPAY_KEY_ID!, process.env.RAZORPAY_KEY_SECRET!) } });
+      const r = await fetch(`https://api.razorpay.com/v1/payment_links/${o.provider_ref}`, { headers: { authorization: basic(rz().id, rz().secret) } });
       const j = await r.json();
       return j.status === "paid" && j.reference_id === o.id && Number(j.amount_paid) >= o.amount_minor;
     }
@@ -99,8 +128,9 @@ export async function isPaid(provider: ProviderId, o: OrderForPayment, hint?: st
   }
 }
 
-export function verifyRazorpaySignature(raw: string, sig: string | null) {
-  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+export async function verifyRazorpaySignature(raw: string, sig: string | null) {
+  await loadPaymentKeys();
+  const secret = rz().webhook;
   if (!secret || !sig) return false;
   const exp = createHmac("sha256", secret).update(raw).digest("hex");
   return exp.length === sig.length && timingSafeEqual(Buffer.from(exp), Buffer.from(sig));

@@ -61,12 +61,34 @@ Stripe and PayPal don't serve Russian cards, so checkout offers the right acquir
 | Provider | Currency | Who it's for | Env vars | Webhook URL |
 |---|---|---|---|---|
 | **YooKassa** | RUB | Russian cards, МИР, СБП, SberPay, YooMoney. Requires a Russian ИП/ООО or самозанятый. | `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` (opt. `YOOKASSA_RECEIPTS=1`, `YOOKASSA_VAT_CODE` for 54-ФЗ receipts) | `/api/payments/yookassa` (event `payment.succeeded`) |
-| **Razorpay** | INR, USD | UPI, Indian cards, netbanking, international cards | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | `/api/payments/razorpay` (event `payment_link.paid`) |
+| **Razorpay** ✅ live | INR, USD | UPI, Indian cards, netbanking, international cards | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` (or Neon `settings.integrations`, see below) | `https://hugs.festivelle.love/api/payments/razorpay` (event `payment_link.paid`) |
 | **NOWPayments** | USD (paid in crypto) | Anyone, incl. Russians abroad | `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET` | `/api/payments/nowpayments` |
 | Test | any | Local development only (`PAYMENTS_TEST_MODE=1`, or admins in dev) | — | — |
 
 Until a provider's keys are set, checkout says payments in that currency open soon. Admins can **comp** a package
 from `/admin`. Alternatives if YooKassa isn't possible: Robokassa or CloudPayments (same adapter shape).
+
+### Razorpay (live since 2026-11-26)
+
+- **Keys.** Env vars win; otherwise `loadPaymentKeys()` in `src/lib/payments.ts` reads them from the Neon row
+  `settings.key = 'integrations'` (`value.razorpay_key_id`, `value.razorpay_key_secret`,
+  `value.razorpay_webhook_secret`), cached 5 minutes. That's how the client's Vercel project gets them. Live keys are
+  stored there now. To rotate, generate a new key pair in the Razorpay dashboard (Account & Settings → API Keys),
+  then merge the new values into that row (`UPDATE settings SET value = value || '{"razorpay_key_id":"…",…}'::jsonb
+  WHERE key = 'integrations'`). Never commit keys. Locally they sit in the git-ignored `.razorpay.local`.
+- **Webhook.** In the Razorpay dashboard: Account & Settings → Webhooks →
+  `https://hugs.festivelle.love/api/payments/razorpay`, active event `payment_link.paid`, secret =
+  `razorpay_webhook_secret`. The route checks the `x-razorpay-signature` HMAC, then re-fetches the link from Razorpay
+  before fulfilling. The return redirect (`/api/payments/return`) verifies the same way, so payment still unlocks if a
+  webhook is late.
+- **How a payment works.** Checkout creates a Razorpay **Payment Link** (`reference_id` = our order id) and sends the
+  customer to its `short_url`. Paid = link status `paid`, same `reference_id`, `amount_paid` ≥ order amount.
+- **USD needs a phone number.** Razorpay refuses international (USD) links without the customer's name, email and
+  phone, so checkout shows a "Mobile number" field when USD + Razorpay is offered (`needsPhone`, `cleanPhone`). INR
+  doesn't need it.
+- **CLI.** The Razorpay CLI (`razorpay`, installed in `~/.local/bin`, configured with `razorpay configure`) is handy for
+  checks: `razorpay payment-links list`, `razorpay payments list`, `razorpay payment-links fetch <plink_id>`,
+  `razorpay refunds …`. It can't manage webhooks or account settings; use the dashboard for those.
 
 ## Website ↔ app contract (festivelle.love → hugs.festivelle.love)
 
@@ -328,7 +350,7 @@ npm run dev
 
 ## Deploy (Vercel)
 
-The GitHub repo `Akshay115/Festivelle-app` (single branch, `main`) is connected to the Vercel project `festivelle/festivelle-app` (the client's team; serves **hugs.festivelle.love**). Every push to `main` deploys it; results show as commit statuses on GitHub. (The old `lyvena/wedding-builder` project no longer exists.) Secrets that project needs but whose env we can't edit are read from Neon `settings.integrations` (AI and Sequenzy keys). Set `SITE_URL=https://festivelle.love` where you can (it's also the default). Environment variables live in Vercel (Production and Preview). For each new app domain:
+The GitHub repo `Akshay115/Festivelle-app` (single branch, `main`) is connected to the Vercel project `festivelle/festivelle-app` (the client's team; serves **hugs.festivelle.love**). Every push to `main` deploys it; results show as commit statuses on GitHub. (The old `lyvena/wedding-builder` project no longer exists.) Secrets that project needs but whose env we can't edit are read from Neon `settings.integrations` (AI, Sequenzy and Razorpay keys). Set `SITE_URL=https://festivelle.love` where you can (it's also the default). Environment variables live in Vercel (Production and Preview). For each new app domain:
 
 ```bash
 neon neon-auth domain add https://<domain>

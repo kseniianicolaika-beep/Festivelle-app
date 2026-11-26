@@ -4,7 +4,7 @@ import { currentUser } from "@/lib/auth/server";
 import { isAdmin } from "@/lib/admin";
 import { quote } from "@/lib/commerce";
 import { CURRENCIES, type Currency } from "@/lib/pricing";
-import { createPayment, providersFor, PROVIDERS, type ProviderId } from "@/lib/payments";
+import { cleanPhone, createPayment, needsPhone, providersFor, PROVIDERS, type ProviderId } from "@/lib/payments";
 import { appUrl } from "@/lib/guard";
 
 async function context(req: Request, b: Record<string, unknown>) {
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
   const c = await context(req, b);
   if ("error" in c) return c.error;
   if ("error" in c.q) return Response.json({ error: c.q.error }, { status: 400 });
-  const providers = providersFor(c.currency, c.admin).map((id) => ({ id, ...PROVIDERS[id], enabled: undefined, currencies: undefined }));
+  const providers = (await providersFor(c.currency, c.admin)).map((id) => ({ id, ...PROVIDERS[id], enabled: undefined, currencies: undefined }));
   return Response.json({ quote: c.q, providers });
 }
 
@@ -35,7 +35,9 @@ export async function POST(req: Request) {
   if ("error" in c) return c.error;
   if ("error" in c.q) return Response.json({ error: c.q.error }, { status: 400 });
   const provider = b.provider as ProviderId;
-  if (!providersFor(c.currency, c.admin).includes(provider)) return Response.json({ error: "That payment method isn’t available for this currency." }, { status: 400 });
+  if (!(await providersFor(c.currency, c.admin)).includes(provider)) return Response.json({ error: "That payment method isn’t available for this currency." }, { status: 400 });
+  const phone = cleanPhone(b.phone);
+  if (needsPhone(provider, c.currency) && !phone) return Response.json({ error: "Please add your mobile number with country code — card payments in USD need it.", needPhone: true }, { status: 400 });
   const q = c.q;
   const amountMinor = Math.round(q.amount * 100);
   const commission = Math.round((amountMinor * q.commissionPct) / 100);
@@ -47,7 +49,7 @@ export async function POST(req: Request) {
   // 100% promo codes: nothing to charge.
   if (amountMinor === 0) return Response.json({ url: `/api/payments/return?order=${order.id}&free=1` });
   try {
-    const p = await createPayment(provider, { id: order.id, currency: q.currency, amount_minor: amountMinor, description: q.description, email: c.user.email }, appUrl(req));
+    const p = await createPayment(provider, { id: order.id, currency: q.currency, amount_minor: amountMinor, description: q.description, email: c.user.email, name: c.user.name || c.user.email?.split("@")[0] || null, phone }, appUrl(req));
     await sql`UPDATE orders SET provider_ref = ${p.ref} WHERE id = ${order.id}`;
     return Response.json({ url: p.url });
   } catch (e) {

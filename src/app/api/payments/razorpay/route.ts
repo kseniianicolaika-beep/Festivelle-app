@@ -5,7 +5,7 @@ import type { Currency } from "@/lib/pricing";
 
 export async function POST(req: Request) {
   const raw = await req.text();
-  if (!verifyRazorpaySignature(raw, req.headers.get("x-razorpay-signature"))) return new Response("bad signature", { status: 400 });
+  if (!(await verifyRazorpaySignature(raw, req.headers.get("x-razorpay-signature")))) return new Response("bad signature", { status: 400 });
   const b = JSON.parse(raw);
   const orderId = b?.payload?.payment_link?.entity?.reference_id;
   if (b.event !== "payment_link.paid" || typeof orderId !== "string" || !/^[0-9a-f-]{36}$/i.test(orderId)) return Response.json({ ok: true });

@@ -9,7 +9,7 @@ import { comp } from "./actions";
 import { formatDate, type Profile } from "@/lib/profile";
 import { themeById } from "@/lib/themes";
 import { aiProvider } from "@/lib/ai";
-import { PROVIDERS } from "@/lib/payments";
+import { PROVIDERS, loadPaymentKeys } from "@/lib/payments";
 import { emailEnabled } from "@/lib/email";
 import { Aurora } from "@/components/fx/Aurora";
 import { Reveal } from "@/components/fx/Reveal";
@@ -22,6 +22,7 @@ export default async function Admin() {
   const user = await currentUser();
   if (!user) redirect("/auth/sign-in?next=/admin");
   if (!isAdmin(user)) notFound();
+  await loadPaymentKeys();
 
   const rows = (await sql`
     SELECT w.id, w.slug, w.owner_id, w.profile, w.theme, w.published, w.plan, w.updated_at, w.tier, w.expires_at, w.subdomain,

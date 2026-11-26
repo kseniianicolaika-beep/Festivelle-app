@@ -24,6 +24,9 @@ export function Checkout({ product, weddingId, currency: initial, onClose }: { p
   const [providers, setProviders] = useState<Provider[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
+  // Razorpay needs a phone number for international (USD) card payments.
+  const askPhone = currency === "USD" && providers.some((p) => p.id === "razorpay");
 
   useEffect(() => {
     const q = new URLSearchParams({ product, currency, ...(weddingId ? { weddingId } : {}), ...(applied ? { promo: applied } : {}) });
@@ -39,7 +42,7 @@ export function Checkout({ product, weddingId, currency: initial, onClose }: { p
 
   async function pay(provider: string) {
     setBusy(provider);
-    const r = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ product, currency, weddingId, promo: applied, provider }) });
+    const r = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ product, currency, weddingId, promo: applied, provider, phone }) });
     const j = await r.json();
     if (!r.ok) { setError(j.error); setBusy(null); return; }
     window.location.assign(j.url);
@@ -78,6 +81,13 @@ export function Checkout({ product, weddingId, currency: initial, onClose }: { p
         </form>
         {applied && quote?.promo && <p className="mt-2 text-xs text-emerald-700">Code {quote.promo} applied ♥</p>}
         {error && <p className="mt-3 text-sm text-rose">{error}</p>}
+
+        {quote && askPhone && (
+          <label className="mt-5 block text-xs text-muted">
+            Mobile number, with country code (needed for card payments in USD)
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" placeholder="+1 555 123 4567" className="field mt-1 !py-2 !text-sm" />
+          </label>
+        )}
 
         <div className="mt-5 space-y-2">
           {quote && providers.map((p) => (
