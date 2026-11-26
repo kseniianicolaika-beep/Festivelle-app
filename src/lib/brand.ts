@@ -15,4 +15,5 @@ export const SOCIAL = [
   { id: "pinterest", label: "Pinterest", url: "https://www.pinterest.com/kseniia0274/" },
   { id: "linkedin", label: "LinkedIn", url: "https://www.linkedin.com/in/kseniia-kalendarova-51746744a" },
   { id: "youtube", label: "YouTube", url: "https://www.youtube.com/@festivelle" },
+  { id: "x", label: "X", url: "https://x.com/festivelle_love" },
 ] as const;

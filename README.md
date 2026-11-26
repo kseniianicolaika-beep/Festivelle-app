@@ -215,7 +215,8 @@ Favicon = the calligraphic heart from the client's round logo, transparent: `src
 ## Social links
 
 Festivelle's profiles live in `SOCIAL` in `src/lib/brand.ts`: Instagram `festivelle_lover`, Facebook page
-“Festivelle Love”, Pinterest `kseniia0274`, LinkedIn (Kseniia Kalendarova) and YouTube `@festivelle` — the resolved
+“Festivelle Love”, Pinterest `kseniia0274`, LinkedIn (Kseniia Kalendarova), YouTube
+`@festivelle` and X `festivelle_love` — the resolved
 profile URLs of the client's share links, without tracking parameters. `<SocialLinks />`
 (`src/components/brand/SocialLinks.tsx`, same line icons as the site footer) shows them on the sign-in / sign-up page
 (romance panel on desktop, under the card on phones) and in the concierge heart panel (“Follow us”, so on every
