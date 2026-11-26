@@ -98,7 +98,7 @@ export function Checkout({ product, weddingId, currency: initial, onClose }: { p
           ))}
           {quote && !providers.length && <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">Payments in {currency} open very soon. Try another currency, or write to us via the heart below and we’ll publish it for you.</p>}
         </div>
-        <p className="mt-5 text-center text-[11px] text-muted">Secure checkout. Your link goes live the moment payment is confirmed.</p>
+        <p className="mt-5 text-center text-[11px] text-muted">Secure checkout. Your link goes live the moment payment is confirmed.<br />By paying you agree to our <a href="https://festivelle.love/terms/" target="_blank" rel="noopener noreferrer" className="underline">Terms</a> and <a href="https://festivelle.love/refunds/" target="_blank" rel="noopener noreferrer" className="underline">Cancellation &amp; Refund Policy</a>.</p>
       </motion.div>
     </motion.div>
   );

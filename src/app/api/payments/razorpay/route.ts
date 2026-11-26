@@ -10,6 +10,7 @@ export async function POST(req: Request) {
   const orderId = b?.payload?.payment_link?.entity?.reference_id;
   if (b.event !== "payment_link.paid" || typeof orderId !== "string" || !/^[0-9a-f-]{36}$/i.test(orderId)) return Response.json({ ok: true });
   const [o] = (await sql`SELECT id, provider_ref, currency, amount_minor, description FROM orders WHERE id = ${orderId} AND provider = 'razorpay' AND status = 'pending'`) as { id: string; provider_ref: string; currency: Currency; amount_minor: number; description: string }[];
-  if (o && (await isPaid("razorpay", o))) await fulfil(o.id);
+  const done = !!o && (await isPaid("razorpay", o)) && (await fulfil(o.id));
+  console.log(`razorpay webhook ${b.event} order=${orderId} fulfilled=${done}`);
   return Response.json({ ok: true });
 }

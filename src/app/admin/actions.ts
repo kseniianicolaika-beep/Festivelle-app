@@ -2,7 +2,11 @@
 import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { requireAdminAction } from "@/lib/admin-guard";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { activate } from "@/lib/commerce";
+import { createPayment, refundRazorpay } from "@/lib/payments";
+import type { Currency } from "@/lib/pricing";
 import { isTier, savePricing } from "@/lib/pricing";
 
 // Gift a package (e.g. for a partner, a friend, or a support case). Logged as a zero-value order.
@@ -77,6 +81,49 @@ export async function setOrderStatus(form: FormData) {
   const st = String(form.get("status"));
   if (st === "refunded") await sql`UPDATE orders SET status = 'refunded' WHERE id = ${String(form.get("id"))} AND status = 'paid'`;
   revalidatePath("/admin/orders");
+}
+
+type RefundRow = { id: string; provider: string; provider_ref: string | null; currency: Currency; amount_minor: number; description: string; status: string };
+
+// Real refund for Razorpay orders: refunds the captured payment in full, then marks the order refunded.
+// (The package itself stays active; take it back by hand if needed.) Other providers: refund in their dashboard.
+export async function refundOrder(form: FormData) {
+  await requireAdminAction();
+  const id = String(form.get("id"));
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  const [o] = (await sql`SELECT id, provider, provider_ref, currency, amount_minor, description, status FROM orders WHERE id = ${id}`) as RefundRow[];
+  let note = "";
+  if (!o || o.status !== "paid" || o.provider !== "razorpay") note = "Only paid Razorpay orders can be refunded from here.";
+  else {
+    try {
+      const ref = await refundRazorpay(o);
+      await sql`UPDATE orders SET status = 'refunded', refund_ref = ${ref} WHERE id = ${id} AND status = 'paid'`;
+    } catch (e) {
+      note = e instanceof Error ? e.message : "Refund failed.";
+    }
+  }
+  revalidatePath("/admin/orders");
+  redirect(note ? `/admin/orders?error=${encodeURIComponent(note)}` : "/admin/orders?refunded=1");
+}
+
+// ₹1 live payment check: a real Razorpay payment that unlocks nothing, to prove checkout → payment → webhook end to end.
+// Refund it afterwards with the Refund button.
+export async function paymentCheck() {
+  const admin = await requireAdminAction();
+  const h = await headers();
+  const base = process.env.APP_URL || `https://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  const [order] = (await sql`INSERT INTO orders (user_id, email, product, description, currency, amount_minor, list_minor, provider)
+    VALUES (${admin.id}, ${admin.email}, 'check_inr', 'Payment check (₹1, refund after)', 'INR', 100, 100, 'razorpay') RETURNING id`) as { id: string }[];
+  let url = "";
+  try {
+    const p = await createPayment("razorpay", { id: order.id, currency: "INR", amount_minor: 100, description: "Festivelle payment check — ₹1, refunded after", email: admin.email, name: admin.name || null }, base);
+    await sql`UPDATE orders SET provider_ref = ${p.ref} WHERE id = ${order.id}`;
+    url = p.url;
+  } catch (e) {
+    await sql`UPDATE orders SET status = 'failed' WHERE id = ${order.id}`;
+    redirect(`/admin/orders?error=${encodeURIComponent(e instanceof Error ? e.message : "Razorpay didn't respond.")}`);
+  }
+  redirect(url);
 }
 
 export const PARTNER_CATEGORIES = async () => CATS;

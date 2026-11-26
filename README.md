@@ -86,6 +86,17 @@ from `/admin`. Alternatives if YooKassa isn't possible: Robokassa or CloudPaymen
 - **USD needs a phone number.** Razorpay refuses international (USD) links without the customer's name, email and
   phone, so checkout shows a "Mobile number" field when USD + Razorpay is offered (`needsPhone`, `cleanPhone`). INR
   doesn't need it.
+- **Refunds.** `/admin/orders` has a **Refund** button on paid Razorpay orders: it refunds the captured payment in
+  full through the Razorpay API (`refundRazorpay` in `src/lib/payments.ts`), marks the order `refunded` and shows the
+  Razorpay refund id (`orders.refund_ref`). The package itself stays active; switch it off by hand if needed. Other
+  providers still show "mark refunded" (refund in their dashboard first). Policy wording lives on the website at
+  festivelle.love/refunds; checkout links to it and to the Terms. Never promise a refund.
+- **₹1 payment check.** `/admin/orders` → **Run ₹1 payment check** makes a real ₹1 Razorpay payment link (order product
+  `check_inr`, unlocks nothing). Pay it, come back, and the order should read `paid`; then press **Refund**. Use it after
+  rotating keys or changing the webhook. The webhook logs `razorpay webhook <event> order=<id> fulfilled=<bool>` in the
+  Vercel runtime logs.
+- **Deploys.** Pushes to `main` deploy `festivelle/festivelle-app` automatically. A Vercel token for the Festivelle
+  team (both projects) is kept outside the repo; never commit it.
 - **CLI.** The Razorpay CLI (`razorpay`, installed in `~/.local/bin`, configured with `razorpay configure`) is handy for
   checks: `razorpay payment-links list`, `razorpay payments list`, `razorpay payment-links fetch <plink_id>`,
   `razorpay refunds …`. It can't manage webhooks or account settings; use the dashboard for those.

@@ -185,6 +185,7 @@ const statements = [
   )`,
   `CREATE INDEX IF NOT EXISTS orders_user_idx ON orders(user_id, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS orders_ref_idx ON orders(provider, provider_ref)`,
+  `ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_ref text`,
   `CREATE TABLE IF NOT EXISTS credits (
     user_id text PRIMARY KEY,
     balance int NOT NULL DEFAULT 0,

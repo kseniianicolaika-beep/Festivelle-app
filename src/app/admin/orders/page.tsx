@@ -1,13 +1,14 @@
 import { sql } from "@/lib/db";
 import { requireAdminPage } from "@/lib/admin-guard";
 import { AdminNav } from "../AdminNav";
-import { setOrderStatus } from "../actions";
+import { paymentCheck, refundOrder, setOrderStatus } from "../actions";
 
-type O = { id: string; email: string | null; product: string; description: string; currency: string; amount_minor: number; list_minor: number; promo_code: string | null; partner: string | null; commission_minor: number; provider: string; status: string; created_at: string; paid_at: string | null };
+type O = { id: string; email: string | null; product: string; description: string; currency: string; amount_minor: number; list_minor: number; promo_code: string | null; partner: string | null; commission_minor: number; provider: string; status: string; created_at: string; paid_at: string | null; refund_ref: string | null };
 const money = (minor: number, c: string) => `${(minor / 100).toLocaleString("en", { maximumFractionDigits: 2 })} ${c}`;
 
-export default async function Orders() {
+export default async function Orders({ searchParams }: { searchParams: Promise<{ error?: string; refunded?: string }> }) {
   const user = await requireAdminPage("/admin/orders");
+  const sp = await searchParams;
   const orders = (await sql`SELECT o.*, p.name AS partner FROM orders o LEFT JOIN partners p ON p.id = o.partner_id ORDER BY o.created_at DESC LIMIT 500`) as O[];
   const totals = (await sql`SELECT currency, sum(amount_minor)::int AS revenue, sum(commission_minor)::int AS commission, count(*)::int AS n
     FROM orders WHERE status = 'paid' GROUP BY currency ORDER BY currency`) as { currency: string; revenue: number; commission: number; n: number }[];
@@ -16,7 +17,14 @@ export default async function Orders() {
     <main className="grain relative min-h-dvh">
       <AdminNav active="orders" email={user.email} />
       <div className="mx-auto max-w-7xl px-6 pb-24 pt-8">
-        <h1 className="display text-5xl">Orders & <em className="text-rose">revenue</em></h1>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h1 className="display text-5xl">Orders & <em className="text-rose">revenue</em></h1>
+          <form action={paymentCheck}>
+            <button className="btn btn-ghost !px-4 !py-2 text-sm" title="A real ₹1 Razorpay payment that unlocks nothing. Pay it, check it turns paid, then press Refund.">Run ₹1 payment check</button>
+          </form>
+        </div>
+        {sp.error && <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">{sp.error}</p>}
+        {sp.refunded && <p className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-800">Refund issued with Razorpay. Money usually reaches the customer in 5–7 working days.</p>}
         <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           {totals.map((t) => (
             <div key={t.currency} className="glass rounded-3xl p-6">
@@ -45,7 +53,11 @@ export default async function Orders() {
                   <td className="px-4 py-3">{o.provider}</td>
                   <td className="px-4 py-3">
                     <span className={o.status === "paid" ? "text-emerald-700" : o.status === "pending" ? "text-amber-700" : "text-muted"}>{o.status}</span>
-                    {o.status === "paid" && o.amount_minor > 0 && (
+                    {o.status === "paid" && o.amount_minor > 0 && o.provider === "razorpay" && (
+                      <form action={refundOrder} className="inline"><input type="hidden" name="id" value={o.id} /><button className="ml-2 text-[11px] text-rose underline" title="Refunds the full payment through Razorpay and marks the order refunded">Refund</button></form>
+                    )}
+                    {o.refund_ref && <span className="ml-2 text-[11px] text-muted">{o.refund_ref}</span>}
+                    {o.status === "paid" && o.amount_minor > 0 && o.provider !== "razorpay" && (
                       <form action={setOrderStatus} className="inline"><input type="hidden" name="id" value={o.id} /><input type="hidden" name="status" value="refunded" /><button className="ml-2 text-[11px] text-muted underline" title="Marks as refunded here — issue the refund in the provider dashboard">mark refunded</button></form>
                     )}
                   </td>

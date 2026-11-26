@@ -128,6 +128,25 @@ export async function isPaid(provider: ProviderId, o: OrderForPayment, hint?: st
   }
 }
 
+/** Refund the captured payment behind a paid Razorpay order, in full. Returns the Razorpay refund id. */
+export async function refundRazorpay(o: OrderForPayment): Promise<string> {
+  await loadPaymentKeys();
+  if (!o.provider_ref) throw new Error("This order has no Razorpay payment link.");
+  const auth = basic(rz().id, rz().secret);
+  const link = await (await fetch(`https://api.razorpay.com/v1/payment_links/${o.provider_ref}`, { headers: { authorization: auth } })).json();
+  if (link.reference_id !== o.id) throw new Error("The Razorpay link doesn't belong to this order.");
+  const pay = ((link.payments ?? []) as { payment_id: string; amount: number; status: string }[]).find((p) => p.status === "captured");
+  if (!pay) throw new Error("No captured payment on this link (already refunded, or not paid).");
+  const res = await fetch(`https://api.razorpay.com/v1/payments/${pay.payment_id}/refund`, {
+    method: "POST",
+    headers: { authorization: auth, "content-type": "application/json" },
+    body: JSON.stringify({ amount: pay.amount, speed: "normal", receipt: o.id.slice(0, 40), notes: { order_id: o.id } }),
+  });
+  const j = await res.json();
+  if (!res.ok) throw new Error(`Razorpay: ${j.error?.description ?? res.status}`);
+  return j.id as string;
+}
+
 export async function verifyRazorpaySignature(raw: string, sig: string | null) {
   await loadPaymentKeys();
   const secret = rz().webhook;
